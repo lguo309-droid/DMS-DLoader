@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hollowmere</title>
+<style>
+:root{--bg:#e8ece4;--panel:#f5f7f1;--ink:#1b2a22;--mute:#5d6d62;--t1:#b9c9a8;--t2:#aebf9c;--mt:#6b7568;--you:#2b6cb0;--foe:#b8432f;--gold:#9a7210;--line:#c9d3bf;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a16;--panel:#1b2620;--ink:#e4ebe0;--mute:#93a398;--t1:#2d4036;--t2:#28392f;--mt:#55625a;--you:#4f9ee0;--foe:#d9604b;--gold:#e3b341;--line:#2c3a32}}
+:root[data-theme="dark"]{--bg:#121a16;--panel:#1b2620;--ink:#e4ebe0;--mute:#93a398;--t1:#2d4036;--t2:#28392f;--mt:#55625a;--you:#4f9ee0;--foe:#d9604b;--gold:#e3b341;--line:#2c3a32}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Georgia,"Times New Roman",serif}
+main{max-width:1120px;margin:0 auto;padding:14px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+h1{font-size:1.5rem;margin:0 0 2px;letter-spacing:.02em}
+.sub{color:var(--mute);margin:0 0 10px;font-size:.9rem}
+.left{flex:1 1 420px;max-width:780px}
+.board{display:grid;grid-template-columns:repeat(24,44px);width:max-content;gap:2px;position:relative}
+.c{aspect-ratio:1;position:relative;display:grid;place-items:center;border-radius:3px;background:var(--t1);cursor:pointer;font-size:1.1rem}
+.c:nth-child(even){background:var(--t2)}
+.c.mtn{background:var(--mt);cursor:default;color:var(--bg)}
+.c.mv{box-shadow:inset 0 0 0 2px var(--you)}
+.c.tg{box-shadow:inset 0 0 0 3px var(--foe)}
+.mine{position:absolute;font-size:1rem;color:var(--mute)}
+.mine.p{color:var(--you)}.mine.e{color:var(--foe)}
+.u{width:76%;height:76%;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--you);color:#fff;position:relative;z-index:1}
+.u.e{background:var(--foe)}.u.k{border-radius:6px;width:86%;height:86%}
+.u.done{opacity:.55}.u.sel{outline:3px solid var(--ink);outline-offset:1px}
+.u i{position:absolute;right:-3px;bottom:-4px;font-size:.62rem;font-style:normal;background:var(--panel);color:var(--ink);border-radius:8px;padding:0 4px;border:1px solid var(--line)}
+.panel{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.panel h2{font-size:1rem;margin:14px 0 6px}.panel h2:first-child{margin-top:0}
+.gold{font-size:1.4rem;color:var(--gold);font-weight:700}
+button{font:inherit;background:var(--ink);color:var(--bg);border:0;border-radius:6px;padding:8px 12px;cursor:pointer;margin:0 6px 6px 0}
+button:disabled{opacity:.35;cursor:not-allowed}
+button:focus-visible{outline:3px solid var(--you);outline-offset:2px}
+.end{background:var(--you);color:#fff;width:100%;margin:10px 0 0}
+.log{font-size:.88rem;color:var(--mute);margin:0;padding-left:18px}
+.msg{min-height:2.6em;font-size:.92rem}
+.over{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 88%,transparent);display:grid;place-content:center;text-align:center;z-index:5;border-radius:6px}
+.over b{font-size:2rem;display:block;margin-bottom:8px}
+.sbk{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20;display:grid;place-items:center;padding:12px;box-sizing:border-box}
+.sci{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;max-width:760px;width:100%;max-height:100%;overflow:auto}
+.sh{display:flex;justify-content:space-between;align-items:center}
+.tr{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.tl{flex:0 0 100%;color:var(--mute);font-size:.85rem}
+.tc{flex:1 1 150px;max-width:220px;text-align:left;display:flex;flex-direction:column;gap:4px;background:var(--bg);color:var(--ink);border:2px solid var(--line);padding:10px;margin:0}
+.tc.cr{border-color:var(--you)}.tc.dn{border-color:var(--gold);opacity:1}
+.tc span{font-size:.82rem;color:var(--mute)}
+.bar{display:block;height:6px;background:var(--line);border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--you)}
+.tc small{font-size:.78rem}
+.scroll{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:6px;overscroll-behavior:contain}
+.c.fog{background:#000;cursor:default}
+.c.dim{filter:brightness(.7)}
+body.menu main{display:none}
+#menu{display:none;min-height:100vh;box-sizing:border-box;padding:24px;align-content:center;justify-items:center;text-align:center}
+body.menu #menu{display:grid}
+.ttl{font-size:clamp(2.4rem,9vw,4.4rem);margin:0 0 6px;letter-spacing:.04em}
+.big{font-size:1.15rem;padding:12px 28px;min-width:220px;margin:6px}
+.big.end{width:auto}
+.mcol{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:flex-start;width:100%;max-width:760px;text-align:left}
+.slots{flex:1 1 320px;display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.slot{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--bg);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.slot small{color:var(--mute);display:block}
+.slot button{margin:0 0 0 4px;padding:6px 10px}
+.help{text-align:left}.help li{margin:6px 0}
+</style></head><body><main>
+<div class="left"><h1>Hollowmere</h1><p class="sub">Hold the mines, raise an army, break the enemy keep.</p><div class="scroll" id="sc"><div class="board" id="b"></div></div></div>
+<div class="panel" id="p"></div><div id="m"></div><div id="sv"></div>
+</main><div id="menu"></div>
+<script>
+const W=24,H=16;
+const TY={soldier:{n:'Soldier',g:'S',hp:10,atk:4,r:1,mv:3,c:4},archer:{n:'Archer',g:'A',hp:6,atk:3,r:2,mv:3,c:5},knight:{n:'Knight',g:'K',hp:14,atk:5,r:1,mv:4,c:8},scout:{n:'Scout',g:'Sc',hp:5,atk:2,r:1,mv:6,c:3},keep:{n:'Keep',g:'♜',hp:20,atk:0,r:0,mv:0,c:0}};
+let S;const key=(x,y)=>x+','+y,dist=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function init(){
+ const t=Array.from({length:H},()=>Array(W).fill(0));
+ for(let y=0;y<H;y++)for(let x=0;x<12;x++){if(Math.abs(x-1)+Math.abs(y-7)>4&&Math.random()<.13){t[y][x]=1;t[H-1-y][W-1-x]=1}}
+ [[3,1],[3,14],[6,5],[6,10],[9,3],[9,12],[11,7]].forEach(([x,y])=>{t[y][x]=2;t[H-1-y][W-1-x]=2});
+ S={t,units:[],own:{},gold:{p:8,e:8},turn:'p',sel:null,over:null,nid:1,log:[],modal:false,seen:{},mem:{},aseen:{},amem:{},pk:false,sc:{p:{done:{},cur:null,pts:{}},e:{done:{},cur:null,pts:{}}}};
+ add('keep','p',1,7);add('keep','e',22,8);
+ note('Your turn. Recruit units, capture mines (◆), and open the science board to pick a research.');render();const sc0=document.getElementById('sc');sc0.scrollLeft=0;sc0.scrollTop=Math.max(0,7*46-sc0.clientHeight/2);
+}
+function add(type,side,x,y){const u={id:S.nid++,type,side,x,y,hp:TY[type].hp+(type!=='keep'&&has(side,'plate')?2:0),moved:false,acted:false};u.mh=u.hp;S.units.push(u);return u}
+const at=(x,y)=>S.units.find(u=>u.x===x&&u.y===y);
+const ok=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&S.t[y][x]!==1;
+const note=m=>{S.log.unshift(m);S.log=S.log.slice(0,6)};
+const mines=s=>Object.values(S.own).filter(v=>v===s).length;
+const TECH={forging:{n:'Forging',c:6,t:1,d:'Soldiers and Knights +1 attack.'},fletching:{n:'Fletching',c:6,t:1,d:'Archers +1 attack.'},taxes:{n:'Taxation',c:6,t:1,d:'+2 gold per turn.'},scholar:{n:'Scholarship',c:6,t:1,d:'+2 science per turn.'},scouting:{n:'Scouting',c:6,t:1,d:'Unlocks the Scout: fast, fragile, sees far.'},plate:{n:'Plate Armor',c:12,t:2,req:'forging',d:'All your units gain +2 HP.'},bows:{n:'Longbows',c:12,t:2,req:'fletching',d:'Archers gain +1 range.'},trade:{n:'Trade Routes',c:12,t:2,req:'taxes',d:'+1 gold per mine you hold.'},cav:{n:'Cavalry Tactics',c:12,t:2,req:'forging',d:'All units move +1.'},siege:{n:'Siege Craft',c:18,t:3,req:'plate',d:'Your units deal +3 damage to keeps.'}};
+const has=(s,id)=>!!S.sc[s].done[id];
+const inc=s=>3+2*mines(s)+(has(s,'taxes')?2:0)+(has(s,'trade')?mines(s):0);
+const sci=s=>2+(has(s,'scholar')?2:0);
+const atk=(u,d)=>{if(u.type==='keep')return 0;let a=TY[u.type].atk;if(u.type==='archer'){if(has(u.side,'fletching'))a++}else if(has(u.side,'forging'))a++;if(d&&d.type==='keep'&&has(u.side,'siege'))a+=3;return a};
+const rng=u=>TY[u.type].r+(u.type==='archer'&&has(u.side,'bows')?1:0);
+const mvOf=u=>TY[u.type].mv+(u.type!=='keep'&&has(u.side,'cav')?1:0);
+const sight=u=>u.type==='keep'?3:mvOf(u);
+function tick(s){const c=S.sc[s];
+ if(!c.cur&&s==='e'){const a=Object.keys(TECH).filter(id=>!c.done[id]&&(!TECH[id].req||c.done[TECH[id].req]));if(a.length)c.cur=a[Math.floor(Math.random()*a.length)]}
+ if(!c.cur)return;const id=c.cur,T=TECH[id];c.pts[id]=(c.pts[id]||0)+sci(s);
+ if(c.pts[id]>=T.c){c.done[id]=1;c.cur=null;if(id==='plate')S.units.forEach(u=>{if(u.side===s&&u.type!=='keep'){u.hp+=2;u.mh+=2}});note(`${s==='p'?'You unlock':'The enemy unlocks'} ${T.n}.`)}}
+function curTxt(){const c=S.sc.p;return c.cur?`researching ${TECH[c.cur].n} (${Math.min(c.pts[c.cur]||0,TECH[c.cur].c)}/${TECH[c.cur].c})`:'no research selected, points are wasted'}
+function reach(u){const m=new Map([[key(u.x,u.y),{x:u.x,y:u.y,d:0}]]),q=[{x:u.x,y:u.y,d:0}];
+ while(q.length){const c=q.shift();if(c.d>=mvOf(u))continue;
+  for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const x=c.x+dx,y=c.y+dy,k=key(x,y);
+   if(ok(x,y)&&!m.has(k)&&!at(x,y)){const n={x,y,d:c.d+1};m.set(k,n);q.push(n)}}}
+ return m}
+const foes=(u,x,y)=>rng(u)?S.units.filter(o=>o.side!==u.side&&dist({x,y},o)<=rng(u)):[];
+function mv(u,x,y){u.x=x;u.y=y;u.moved=true;if(S.t[y][x]===2&&u.type!=='keep'){S.own[key(x,y)]=u.side}}
+function strike(a,d){const A=TY[a.type],D=TY[d.type],dm=atk(a,d);a.acted=a.moved=true;d.hp-=dm;
+ note(`${side(a)} ${A.n} hits ${side(d)} ${D.n} for ${dm}.`);
+ if(d.hp<=0){S.units=S.units.filter(o=>o!==d);note(`${side(d)} ${D.n} falls.`);if(d.type==='keep')S.over=a.side;return}
+ if(rng(d)>=dist(a,d)&&atk(d,a)>0){const c=Math.max(1,atk(d,a)-1);a.hp-=c;note(`${side(d)} ${D.n} strikes back for ${c}.`);
+  if(a.hp<=0){S.units=S.units.filter(o=>o!==a);note(`${side(a)} ${A.n} falls.`)}}}
+const side=u=>u.side==='p'?'Your':'Enemy';
+function spot(s){const k=S.units.find(u=>u.type==='keep'&&u.side===s);if(!k)return null;
+ for(const[dx,dy]of[[1,0],[0,1],[0,-1],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){const x=k.x+dx,y=k.y+dy;if(ok(x,y)&&!at(x,y))return{x,y}}return null}
+function recruit(s,type){const p=spot(s);if(!p||S.gold[s]<TY[type].c||(type==='scout'&&!has(s,'scouting')))return false;S.gold[s]-=TY[type].c;const u=add(type,s,p.x,p.y);u.moved=u.acted=true;return true}
+function click(x,y){
+ if(S.over||S.turn!=='p'||!ok(x,y))return;const u=at(x,y),s=S.sel;
+ if(s&&u&&u.side==='e'&&!s.acted&&foes(s,s.x,s.y).includes(u)){strike(s,u);S.sel=null;return render()}
+ if(s&&!u&&!s.moved&&reach(s).has(key(x,y))){mv(s,x,y);return render()}
+ S.sel=u&&u.side==='p'?u:null;render()}
+async function endTurn(){
+ if(S.over||S.turn!=='p')return;S.turn='e';S.sel=null;
+ S.gold.e+=inc('e');tick('e');S.units.forEach(u=>{if(u.side==='e')u.moved=u.acted=false});render();await sleep(500);
+ let n=0;while(S.gold.e>=4&&S.units.filter(u=>u.side==='e').length<9&&n++<4){
+  const r=Math.random(),t=has('e','scouting')&&r>.9&&S.gold.e>=3?'scout':S.gold.e>=8&&r<.35?'knight':S.gold.e>=5&&r<.65?'archer':'soldier';if(!recruit('e',t))break;}
+ note('The enemy musters its forces.');render();await sleep(500);
+ for(const u of S.units.filter(o=>o.side==='e'&&o.type!=='keep')){
+  if(S.over)break;if(!S.units.includes(u)||u.moved||u.acted)continue;aiAct(u);render();await sleep(450)}
+ if(S.over)return render();
+ S.gold.p+=inc('p');tick('p');S.units.forEach(u=>{if(u.side==='p')u.moved=u.acted=false});S.turn='p';
+ note(`Your turn. Income: +${inc('p')} gold, +${sci('p')} science.`);render()}
+function aiVis(){const V=new Set();S.units.forEach(q=>{if(q.side!=='e')return;const r=sight(q);for(let yy=Math.max(0,q.y-r);yy<=Math.min(H-1,q.y+r);yy++)for(let xx=Math.max(0,q.x-r);xx<=Math.min(W-1,q.x+r);xx++)if(Math.abs(xx-q.x)+Math.abs(yy-q.y)<=r){const k=key(xx,yy);V.add(k);S.aseen[k]=1;S.amem[k]=S.own[k]||''}});return V}
+function aiAct(u){
+ const R=reach(u),A={atk:atk(u)};let best=null;const AV=aiVis();
+ for(const t of R.values())for(const f of foes(u,t.x,t.y).filter(o=>AV.has(key(o.x,o.y)))){
+  const sc=(A.atk>=f.hp?100:0)+(f.type==='keep'?20:0)+A.atk*2-f.hp*.5-t.d*.1;if(!best||sc>best.sc)best={sc,t,f}}
+ if(best){if(best.t.d)mv(u,best.t.x,best.t.y);return strike(u,best.f)}
+ const mines=[];S.t.forEach((r,y)=>r.forEach((v,x)=>{if(v===2&&S.aseen[key(x,y)]&&S.amem[key(x,y)]!=='e')mines.push({x,y})}));
+ const pl=S.units.filter(o=>o.side==='p');const near=pl.filter(o=>o.type!=='keep'&&AV.has(key(o.x,o.y))).sort((a,b)=>dist(u,a)-dist(u,b))[0];
+ const pk=pl.find(o=>o.type==='keep');if(pk&&AV.has(key(pk.x,pk.y)))S.pk=true;const keep=S.pk?pk:null;
+ let goal=near||((u.id%2===0&&mines.length)?mines.sort((a,b)=>dist(u,a)-dist(u,b))[0]:keep);if(!goal){let b=1e9;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(!S.aseen[key(x,y)]){const d=dist(u,{x,y})+x*.5;if(d<b){b=d;goal={x,y}}}}if(!goal)return;
+ let bt=null;for(const t of R.values()){const d=dist(t,goal)+Math.random()*.3;if(!bt||d<bt.d)bt={d,t}}
+ if(bt&&bt.t.d)mv(u,bt.t.x,bt.t.y)}
+function render(){
+ const b=document.getElementById('b'),s=S.sel;let h='';
+ const R=s&&!s.moved&&S.turn==='p'?reach(s):new Map(),T=s&&!s.acted?foes(s,s.x,s.y):[];
+ const V=new Set();S.units.forEach(q=>{if(q.side!=='p')return;const r=sight(q);for(let yy=Math.max(0,q.y-r);yy<=Math.min(H-1,q.y+r);yy++)for(let xx=Math.max(0,q.x-r);xx<=Math.min(W-1,q.x+r);xx++)if(Math.abs(xx-q.x)+Math.abs(yy-q.y)<=r){const k=key(xx,yy);V.add(k);S.seen[k]=1;S.mem[k]=S.own[k]||''}});
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+  const k=key(x,y),vis=V.has(k),sn=S.seen[k];const v=S.t[y][x],u=vis?at(x,y):null,cls=['c'];if(!sn){h+='<div class="c fog"></div>';continue}if(v===1)cls.push('mtn');if(!vis)cls.push('dim');
+  if(R.has(key(x,y))&&!u)cls.push('mv');if(u&&T.includes(u))cls.push('tg');
+  let inner=v===1?'▲':'';if(v===2)inner=`<span class="mine ${S.mem[k]||''}">◆</span>`;
+  if(u){inner+=`<div class="u ${u.side} ${u.type==='keep'?'k':''} ${u.acted&&u.side==='p'&&u.type!=='keep'?'done':''} ${s===u?'sel':''}">${TY[u.type].g}<i>${u.hp}</i></div>`}
+  h+=`<div class="${cls.join(' ')}" onclick="click_(${x},${y})">${inner}</div>`}
+ if(S.over)h+=`<div class="over"><div><b>${S.over==='p'?'Victory':'Defeat'}</b><button onclick="init()">Play again</button></div></div>`;
+ b.innerHTML=h;
+ const pt=S.turn==='p'&&!S.over,free=!!spot('p');
+ let info='Select one of your units to move (blue) and attack (red).';
+ if(s){const T_=TY[s.type];info=`${T_.n}: ${s.hp}/${s.mh} HP, attack ${atk(s)}, range ${rng(s)}, move ${mvOf(s)}.`}
+ document.getElementById('p').innerHTML=`<h2>Treasury</h2><div class="gold">${S.gold.p} gold</div><div class="sub">+${inc('p')} per turn · Enemy: ${S.gold.e} gold, +${inc('e')}</div><h2>Science</h2><div class="sub">+${sci('p')} per turn, ${curTxt()}</div><button onclick="openSci()">Open science board</button><h2>Game</h2><button ${pt?'':'disabled'} onclick="openSaves()">Save game</button><button ${pt?'':'disabled'} onclick="showMenu('home')">Main menu</button>
+ <h2>Recruit at your keep</h2>${['soldier','archer','knight','scout'].map(t=>`<button ${pt&&free&&S.gold.p>=TY[t].c&&(t!=='scout'||has('p','scouting'))?'':'disabled'} onclick="rec('${t}')">${TY[t].n} (${t==='scout'&&!has('p','scouting')?'locked':TY[t].c})</button>`).join('')}
+ <div class="sub">Soldier: sturdy. Archer: range 2. Knight: fast and strong.</div>
+ <h2>Selected</h2><div class="msg">${info}</div>
+ <button class="end" ${pt?'':'disabled'} onclick="endTurn()">${S.turn==='p'?'End turn':'Enemy is moving…'}</button>
+ <h2>Log</h2><ul class="log">${S.log.map(l=>`<li>${l}</li>`).join('')}</ul>`}
+function click_(x,y){click(x,y)}
+function openSci(){S.modal=true;render()}
+function closeSci(){S.modal=false;render()}
+function pick(id){const c=S.sc.p,T=TECH[id];if(c.done[id]||(T.req&&!c.done[T.req]))return;c.cur=id;render()}
+function renderSci(){const m=document.getElementById('m');if(!S.modal){m.innerHTML='';return}
+ const c=S.sc.p;let h=`<div class="sbk" onclick="closeSci()"><div class="sci" onclick="event.stopPropagation()"><div class="sh"><b>Science board</b><button onclick="closeSci()">Close</button></div><p class="sub">You produce ${sci('p')} science per turn (2 base, +2 with Scholarship). A project unlocks when its progress reaches its cost.</p>`;
+ for(const t of [1,2,3]){h+=`<div class="tr"><div class="tl">Tier ${['I','II','III'][t-1]}</div>`;
+  for(const[id,T]of Object.entries(TECH).filter(([,T])=>T.t===t)){const done=c.done[id],lock=T.req&&!c.done[T.req],pts=Math.min(c.pts[id]||0,T.c),cur=c.cur===id;
+   h+=`<button class="tc ${done?'dn':''} ${cur?'cr':''}" ${done||lock?'disabled':''} onclick="pick('${id}')"><b>${T.n}</b><span>${T.d}</span><span class="bar"><i style="width:${pts/T.c*100}%"></i></span><small>${done?'Unlocked':lock?'Needs '+TECH[T.req].n:(cur?'Researching ':'Cost ')+pts+'/'+T.c}</small></button>`}
+  h+='</div>'}
+ m.innerHTML=h+'</div></div>'}
+const _render=render;render=function(){_render();renderSci();drawSv()};
+function rec(t){if(S.turn==='p'&&!S.over&&recruit('p',t)){note(`You recruit a ${TY[t].n}.`);render()}}
+const SK='hollowmere:saves';let svOpen=false,svAsk=-1,mScr='home',mHelp=false;
+function getSaves(){let a=[];try{a=JSON.parse(localStorage.getItem(SK))}catch(e){}if(!Array.isArray(a))a=[];while(a.length<5)a.push(null);return a.slice(0,5)}
+function putSaves(a){try{localStorage.setItem(SK,JSON.stringify(a));return true}catch(e){return false}}
+function canStore(){try{localStorage.setItem('hm:t','1');localStorage.removeItem('hm:t');return true}catch(e){return false}}
+function redraw(){document.body.classList.contains('menu')?drawMenu():drawSv()}
+function slotsHtml(mode){const a=getSaves();let h='';
+ for(let i=0;i<5;i++){const s=a[i];let info,right='';
+  if(!s){info='<b>Empty slot</b>';if(mode==='save')right=`<button onclick="doSave(${i})">Save here</button>`}
+  else{info=`<b>${s.name}</b><small>${s.info}</small>`;
+   if(svAsk===i)right=`<span>${mode==='save'?'Overwrite?':'Delete?'}</span><button onclick="${mode==='save'?'doSave':'doDel'}(${i})">Yes</button><button onclick="svAsk=-1;redraw()">No</button>`;
+   else right=mode==='save'?`<button onclick="svAsk=${i};redraw()">Overwrite</button>`:`<button onclick="loadGame(${i})">Load</button><button onclick="svAsk=${i};redraw()">Delete</button>`}
+  h+=`<div class="slot"><div>${info}</div><div>${right}</div></div>`}
+ return h}
+function helpHtml(){return `<div class="sbk" onclick="mHelp=false;drawMenu()"><div class="sci help" onclick="event.stopPropagation()"><div class="sh"><b>How to play</b><button onclick="mHelp=false;drawMenu()">Close</button></div><ul>
+<li><b>Goal:</b> destroy the enemy keep (♜) before it destroys yours.</li>
+<li><b>Turns:</b> click one of your units. Blue squares show where it can move, red outlines show enemies it can attack. Each unit moves once and attacks once per turn. New recruits wait a turn. Press End turn when you are done.</li>
+<li><b>Gold:</b> recruit units at your keep. You earn 3 gold per turn, plus 2 for each mine (◆) you hold. Stand on a mine to capture it.</li>
+<li><b>Units:</b> Soldiers are sturdy, Archers hit from 2 tiles away, Knights are fast and strong, Scouts are fast and fragile but see far.</li>
+<li><b>Science:</b> open the science board and pick an advancement. You make 2 science per turn, and it unlocks when progress reaches its cost. Scouts need the Scouting advancement.</li>
+<li><b>Fog of war:</b> black tiles are unexplored. Units see as far as they can move, and the enemy plays by the same rule.</li>
+<li><b>Big map:</b> scroll the map with your mouse wheel, scroll bars, or by dragging on a touch screen.</li>
+<li><b>Saving:</b> press Save game during your turn and pick a slot. Saves stay in this browser.</li></ul></div></div>`}
+function drawMenu(){const m=document.getElementById('menu');
+ if(mScr==='home')m.innerHTML=`<h1 class="ttl">Hollowmere</h1><p class="sub">Hold the mines, raise an army, break the enemy keep.</p><div><button class="big end" onclick="showMenu('saves')">Play</button></div><div><button class="big" onclick="mHelp=true;drawMenu()">How to play</button></div>${mHelp?helpHtml():''}`;
+ else m.innerHTML=`<h1 class="ttl" style="font-size:2.2rem">Play</h1><div class="mcol"><div class="slots"><b>Saved games</b>${canStore()?'':'<small>Saving is not available in this browser.</small>'}${slotsHtml('load')}</div><div><button class="big end" onclick="startGame()">Start new game</button><br><button class="big" onclick="showMenu('home')">Back</button></div></div>`}
+function showMenu(s){mScr=s;svOpen=false;svAsk=-1;document.getElementById('sv').innerHTML='';document.body.className='menu';drawMenu()}
+function startGame(){document.body.className='';svOpen=false;init()}
+function toKeep(){const k=S.units.find(u=>u.type==='keep'&&u.side==='p'),sc=document.getElementById('sc');sc.scrollLeft=0;sc.scrollTop=Math.max(0,k.y*46-sc.clientHeight/2)}
+function loadGame(i){const s=getSaves()[i];if(!s)return;S=s.data;S.modal=false;S.sel=null;S.turn='p';svAsk=-1;document.body.className='';note('Game loaded.');render();toKeep()}
+function doDel(i){const a=getSaves();a[i]=null;putSaves(a);svAsk=-1;drawMenu()}
+function openSaves(){if(S.turn!=='p'||S.over)return;svOpen=true;svAsk=-1;drawSv()}
+function closeSv(){svOpen=false;svAsk=-1;drawSv()}
+function doSave(i){if(S.turn!=='p'||S.over)return;const a=getSaves(),d=JSON.parse(JSON.stringify({...S,sel:null,modal:false})),n=S.units.filter(u=>u.side==='p'&&u.type!=='keep').length;
+ a[i]={name:'Save '+(i+1),info:`${new Date().toLocaleString()} · ${n} units · ${S.gold.p} gold`,data:d};
+ note(putSaves(a)?`Game saved to slot ${i+1}.`:'Could not save in this browser.');svOpen=false;svAsk=-1;render()}
+function drawSv(){const m=document.getElementById('sv');if(!svOpen){m.innerHTML='';return}
+ m.innerHTML=`<div class="sbk" onclick="closeSv()"><div class="sci" onclick="event.stopPropagation()"><div class="sh"><b>Save game</b><button onclick="closeSv()">Close</button></div><p class="sub">${canStore()?'Pick a slot. Saving over an existing save asks you first.':'Saving is not available in this browser.'}</p><div class="slots" style="border:0;padding:0">${slotsHtml('save')}</div></div></div>`}
+showMenu('home');
+</script></body></html>
