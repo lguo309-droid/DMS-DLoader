@@ -66,35 +66,40 @@ body.menu #menu{display:grid}
 .u.pf::after{content:'';position:absolute;inset:-4px;border:2px dotted var(--gold);border-radius:inherit;pointer-events:none}
 .c.riv{background:color-mix(in srgb,var(--you) 55%,var(--bg));color:var(--bg);cursor:default}
 .c.brg{background:color-mix(in srgb,#9a7b4a 65%,var(--t1));color:var(--bg)}
+.gl{position:absolute;pointer-events:none}
+.c.sp{box-shadow:inset 0 0 0 2px #e08a1e;background-image:repeating-linear-gradient(45deg,transparent 0 6px,rgba(224,138,30,.3) 6px 12px)}
 </style></head><body><main>
 <div class="left"><h1>Hollowmere</h1><p class="sub">Hold the mines, raise an army, break the enemy keep.</p><div class="scroll" id="sc"><div class="board" id="b"></div></div></div>
-<div class="panel" id="p"></div><div id="m"></div><div id="sv"></div><div id="rc"></div><div id="pf"></div>
+<div class="panel" id="p"></div><div id="m"></div><div id="sv"></div><div id="rc"></div><div id="pf"></div><div id="ev"></div>
 </main><div id="menu"></div>
 <script>
 const W=24,H=16;
-const TY={soldier:{n:'Soldier',g:'S',hp:10,atk:4,r:1,mv:3,c:4},archer:{n:'Archer',g:'A',hp:6,atk:3,r:2,mv:3,c:5},knight:{n:'Knight',g:'K',hp:14,atk:5,r:1,mv:4,c:8},scout:{n:'Scout',g:'Sc',hp:5,atk:2,r:1,mv:6,c:3},you:{n:'You',g:'★',hp:100,atk:5,r:1,mv:3,c:0},healer:{n:'Healer',g:'+',hp:8,atk:1,r:1,mv:3,c:6,d:'Heals adjacent allies by 3 HP at the end of your turn.'},turret:{n:'Crossbow Turret',g:'T',hp:10,atk:7,r:7,mv:1,c:12,d:'Slow, extreme range, high power. Targets must be visible.'},keep:{n:'Keep',g:'♜',hp:20,atk:0,r:0,mv:0,c:0}};
+const TY={soldier:{n:'Soldier',g:'S',hp:10,atk:4,r:1,mv:3,c:4},archer:{n:'Archer',g:'A',hp:6,atk:3,r:2,mv:3,c:5},knight:{n:'Knight',g:'K',hp:14,atk:5,r:1,mv:4,c:8},scout:{n:'Scout',g:'Sc',hp:5,atk:2,r:1,mv:6,c:3},you:{n:'You',g:'★',hp:100,atk:5,r:1,mv:3,c:0},healer:{n:'Healer',g:'+',hp:8,atk:1,r:1,mv:3,c:6,d:'Heals adjacent allies by 3 HP at the end of your turn.'},turret:{n:'Crossbow Turret',g:'T',hp:10,atk:7,r:7,mv:1,c:12,d:'Slow, extreme range, high power. Targets must be visible.'},horsemen:{n:'Horsemen',g:'H',hp:9,atk:6,r:1,mv:6,c:9,d:'Fast riders with high attack. Needs a Horse resource.'},carriage:{n:'Carriage',g:'C',hp:8,atk:0,r:0,mv:6,c:7,d:'Fast. Carries up to 2 units. Needs a Horse resource.'},
+guard:{n:'Guard',g:'G',hp:12,atk:4,r:1,mv:4,c:0,d:'+1 move and powerful counterstrikes.'},rogue:{n:'Rogue',g:'R',hp:8,atk:6,r:1,mv:6,c:0,d:'+3 move and high offense, but frail.'},longbow:{n:'Longbowman',g:'L',hp:7,atk:5,r:3,mv:3,c:0,d:'High offense and extra range.'},volley:{n:'Volleysman',g:'V',hp:6,atk:4,r:2,mv:3,c:0,d:'Hits a 3x3 area centered on its target.'},battlemaster:{n:'Battlemaster',g:'B',hp:15,atk:7,r:1,mv:4,c:0,d:'High offense and counter. 25% chance of a critical hit (double damage).'},trainer:{n:'Trainer',g:'Tr',hp:10,atk:3,r:1,mv:3,c:0,d:'Weaker fighter. Trains a new Knight every 3 turns.'},heavycav:{n:'Heavy Cavalry',g:'HC',hp:14,atk:8,r:1,mv:6,c:0,d:'Tough and hard-hitting.'},pistol:{n:'Pistol Rider',g:'P',hp:9,atk:7,r:2,mv:6,c:0,d:'Fast ranged attacker with high offense.'},general:{n:'General',g:'♚',hp:100,atk:7,r:1,mv:4,c:0,d:'The enemy commander.'},keep:{n:'Keep',g:'♜',hp:20,atk:0,r:0,mv:0,c:0}};
 let S;const key=(x,y)=>x+','+y,dist=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y),sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function init(scn){let sd=(scn||0)*7919+13;const rnd=scn?()=>(sd=(sd*16807)%2147483647)/2147483647:Math.random;
  const t=Array.from({length:H},()=>Array(W).fill(0));
  for(let y=0;y<H;y++)for(let x=0;x<12;x++){if(Math.abs(x-1)+Math.abs(y-7)>4&&rnd()<.13){t[y][x]=1;t[H-1-y][W-1-x]=1}}
  [[3,1],[3,14],[6,5],[6,10],[9,3],[9,12],[11,7]].forEach(([x,y])=>{t[y][x]=2;t[H-1-y][W-1-x]=2});
  S={t,units:[],own:{},gold:{p:8,e:8},turn:'p',sel:null,over:null,nid:1,log:[],modal:false,seen:{},mem:{},aseen:{},amem:{},pk:false,sc:{p:{done:{},cur:null,pts:{}},e:{done:{},cur:null,pts:{}}}};
- if(scn===2)setup2();else if(scn){S.scn=scn;S.gold={p:10,e:6};for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(Math.abs(x-16)+Math.abs(y-8)<=2&&S.t[y][x]!==2)S.t[y][x]=0;add('keep','p',1,7);add('keep','e',16,8);[[2,6],[2,8],[3,7]].forEach(([x,y],i)=>add(i<2?'soldier':'archer','p',x,y));add('you','p',2,7);if(scn>1)loadForce();[[15,7],[15,9],[14,8]].forEach(([x,y],i)=>add(i<2?'soldier':'archer','e',x,y));note('Objective: destroy the Korvane outpost.')}else{add('keep','p',1,7);add('keep','e',22,8)}
+ if(scn===2)setup2();else if(scn===3)setup3();else if(scn===4)setup4();else if(scn===5)setup5();else if(scn){S.scn=scn;S.gold={p:10,e:6};for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(Math.abs(x-16)+Math.abs(y-8)<=2&&S.t[y][x]!==2)S.t[y][x]=0;add('keep','p',1,7);add('keep','e',16,8);[[2,6],[2,8],[3,7]].forEach(([x,y],i)=>add(i<2?'soldier':'archer','p',x,y));add('you','p',2,7);if(scn>1)loadForce();[[15,7],[15,9],[14,8]].forEach(([x,y],i)=>add(i<2?'soldier':'archer','e',x,y));note('Objective: destroy the Korvane outpost.')}else{add('keep','p',1,7);add('keep','e',22,8)}
  note('Your turn. Recruit units, capture mines (◆), and open the science board to pick a research.');render();const sc0=document.getElementById('sc');sc0.scrollLeft=0;sc0.scrollTop=Math.max(0,7*46-sc0.clientHeight/2);
 }
-function add(type,side,x,y){const u={id:S.nid++,type,side,x,y,hp:TY[type].hp+(type!=='keep'&&has(side,'plate')?2:0),moved:false,acted:false,xp:0,lv:0};u.mh=u.hp;S.units.push(u);return u}
+function add(type,side,x,y){const u={id:S.nid++,type,side,x,y,hp:TY[type].hp+(type!=='keep'&&has(side,'plate')?2:0),moved:false,acted:false,xp:0,lv:0};if(type==='carriage')u.cargo=[];u.mh=u.hp;S.units.push(u);return u}
 const at=(x,y)=>S.units.find(u=>u.x===x&&u.y===y);
 const ok=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&S.t[y][x]!==1&&S.t[y][x]!==3;
 const note=m=>{S.log.unshift(m);S.log=S.log.slice(0,6)};
-const mines=s=>Object.values(S.own).filter(v=>v===s).length;
+const mines=s=>Object.entries(S.own).filter(([k,v])=>v===s&&S.t[+k.split(',')[1]][+k.split(',')[0]]===2).length;
+const NEEDH=['horsemen','carriage'];
+const horses=s=>Object.entries(S.own).filter(([k,v])=>v===s&&S.t[+k.split(',')[1]][+k.split(',')[0]]===5).length;
 const TECH={forging:{n:'Forging',c:6,t:1,d:'Soldiers and Knights +1 attack.'},fletching:{n:'Fletching',c:6,t:1,d:'Archers +1 attack.'},taxes:{n:'Taxation',c:6,t:1,d:'+2 gold per turn.'},scholar:{n:'Scholarship',c:6,t:1,d:'+2 science per turn.'},scouting:{n:'Scouting',c:6,t:1,d:'Unlocks the Scout: fast, fragile, sees far.'},plate:{n:'Plate Armor',c:12,t:2,req:'forging',d:'All your units gain +2 HP.'},bows:{n:'Longbows',c:12,t:2,req:'fletching',d:'Archers gain +1 range.'},trade:{n:'Trade Routes',c:12,t:2,req:'taxes',d:'+1 gold per mine you hold.'},cav:{n:'Cavalry Tactics',c:12,t:2,req:'forging',d:'All units move +1.'},siege:{n:'Siege Craft',c:18,t:3,req:'plate',d:'Your units deal +3 damage to keeps.'}};
 const has=(s,id)=>!!S.sc[s].done[id];
 const inc=s=>3+2*mines(s)+(has(s,'taxes')?2:0)+(has(s,'trade')?mines(s):0);
 const sci=s=>2+(has(s,'scholar')?2:0);
-const atk=(u,d)=>{if(u.type==='keep')return 0;let a=TY[u.type].atk+Math.ceil((u.lv||0)/2);if(u.type==='archer'){if(has(u.side,'fletching'))a++}else if(has(u.side,'forging'))a++;if(d&&d.type==='keep'&&has(u.side,'siege'))a+=3;return a};
-const rng=u=>TY[u.type].r+(u.type==='archer'&&has(u.side,'bows')?1:0);
+const atk=(u,d)=>{if(u.type==='keep')return 0;let a=TY[u.type].atk+Math.ceil((u.lv||0)/2);if(ARCH.includes(u.type)){if(has(u.side,'fletching'))a++}else if(has(u.side,'forging'))a++;if(d&&d.type==='keep'&&has(u.side,'siege'))a+=3;return a};
+const rng=u=>TY[u.type].r+(ARCH.includes(u.type)&&has(u.side,'bows')?1:0);
 const mvOf=u=>TY[u.type].mv+(u.type!=='keep'&&has(u.side,'cav')?1:0);
-const sight=u=>u.type==='keep'||u.type==='turret'?3:mvOf(u);
+const sight=u=>S.scn===5?99:u.type==='keep'||u.type==='turret'||u.type==='carriage'?3:mvOf(u);
 function tick(s){const c=S.sc[s];
  if(!c.cur&&s==='e'){const a=Object.keys(TECH).filter(id=>!c.done[id]&&(!TECH[id].req||c.done[TECH[id].req]));if(a.length)c.cur=a[Math.floor(Math.random()*a.length)]}
  if(!c.cur)return;const id=c.cur,T=TECH[id];c.pts[id]=(c.pts[id]||0)+sci(s);
@@ -106,43 +111,44 @@ function reach(u){const m=new Map([[key(u.x,u.y),{x:u.x,y:u.y,d:0}]]),q=[{x:u.x,
    if(ok(x,y)&&!m.has(k)&&!at(x,y)){const n={x,y,d:c.d+1};m.set(k,n);q.push(n)}}}
  return m}
 const foes=(u,x,y)=>rng(u)?S.units.filter(o=>o.side!==u.side&&dist({x,y},o)<=rng(u)):[];
-function mv(u,x,y){u.x=x;u.y=y;u.moved=true;if(S.t[y][x]===2&&u.type!=='keep'){S.own[key(x,y)]=u.side}}
+function mv(u,x,y){u.x=x;u.y=y;u.moved=true;if((S.t[y][x]===2||S.t[y][x]===5)&&u.type!=='keep'){S.own[key(x,y)]=u.side}}
 const LV=[10,25,45,70,100];
-function gain(u,n){if(u.type==='keep'||(u.lv||0)>=5)return;u.xp=(u.xp||0)+n;u.lv=u.lv||0;while(u.lv<5&&u.xp>=LV[u.lv]){u.lv++;u.mh+=3;u.hp+=3;note(`${side(u)} ${TY[u.type].n} reaches level ${u.lv}!`)}}
-function strike(a,d){const A=TY[a.type],D=TY[d.type],dm=atk(a,d);a.acted=a.moved=true;d.hp-=dm;gain(a,d.hp<=0?8:3);
- note(`${side(a)} ${A.n} hits ${side(d)} ${D.n} for ${dm}.`);
- if(d.hp<=0){S.units=S.units.filter(o=>o!==d);note(`${side(d)} ${D.n} falls.`);if(d.type==='you'||(d.type==='keep'&&(d.side==='p'||!S.units.some(o=>o.type==='keep'&&o.side==='e')))){S.over=a.side;S.cause=d.type;saveForce()}return}
- if(rng(d)>=dist(a,d)&&atk(d,a)>0){const c=Math.max(1,atk(d,a)-1);a.hp-=c;note(`${side(d)} ${D.n} strikes back for ${c}.`);
+function gain(u,n){if(u.type==='keep'||(u.lv||0)>=5)return;u.xp=(u.xp||0)+n;u.lv=u.lv||0;while(u.lv<5&&u.xp>=LV[u.lv]){u.lv++;u.mh+=3;u.hp+=3;note(`${side(u)} ${TY[u.type].n} reaches level ${u.lv}!`)}if(u.lv>=5&&EVO[u.type]){if(u.side==='e')evolve(u,EVO[u.type][Math.random()<.5?0:1]);else{u.evo=true;note(`${side(u)} ${TY[u.type].n} is ready to evolve!`)}}}
+function strike(a,d){const sp=a.type==='volley'?S.units.filter(o=>o.side!==a.side&&o!==d&&Math.max(Math.abs(o.x-d.x),Math.abs(o.y-d.y))<=1):[];strike0(a,d);if(sp.length&&!S.over)splash(a,sp);if(S.scn===4&&!S.over&&S.wave>=5&&!S.units.some(u=>u.side==='e')){S.over='p';saveForce()}}
+function strike0(a,d){const A=TY[a.type],D=TY[d.type],dm=atk(a,d)*(a.type==='battlemaster'&&Math.random()<.25?2:1);a.acted=a.moved=true;d.hp-=dm;gain(a,d.hp<=0?8:3);
+ note(`${side(a)} ${A.n} hits ${side(d)} ${D.n} for ${dm}.${dm>atk(a,d)?' Critical hit!':''}`);
+ if(d.hp<=0){S.units=S.units.filter(o=>o!==d);note(`${side(d)} ${D.n} falls.`);if(d.type==='you'||d.type==='general'||(d.type==='keep'&&!S.units.some(o=>o.type==='keep'&&o.side===d.side))){S.over=a.side;S.cause=d.type;saveForce()}return}
+ if(rng(d)>=dist(a,d)&&atk(d,a)>0){const c=Math.max(1,atk(d,a)-1+(CTR.includes(d.type)?2:0));a.hp-=c;note(`${side(d)} ${D.n} strikes back for ${c}.`);
   if(a.hp<=0){S.units=S.units.filter(o=>o!==a);note(`${side(a)} ${A.n} falls.`);if(a.type==='you'){S.over='e';S.cause='you'}}}}
 const side=u=>u.side==='p'?'Your':'Enemy';
 function spot(s){const k=S.units.find(u=>u.type==='keep'&&u.side===s);if(!k)return null;
  for(const[dx,dy]of[[1,0],[0,1],[0,-1],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){const x=k.x+dx,y=k.y+dy;if(ok(x,y)&&!at(x,y))return{x,y}}return null}
-function recruit(s,type){const p=spot(s);if(!p||S.gold[s]<TY[type].c||(type==='scout'&&!has(s,'scouting')))return false;S.gold[s]-=TY[type].c;const u=add(type,s,p.x,p.y);u.moved=u.acted=true;return true}
+function recruit(s,type){const p=spot(s);if(!p||S.gold[s]<TY[type].c||(type==='scout'&&!has(s,'scouting'))||(NEEDH.includes(type)&&!horses(s)))return false;S.gold[s]-=TY[type].c;const u=add(type,s,p.x,p.y);u.moved=u.acted=true;return true}
 function click(x,y){
- if(S.over||S.turn!=='p'||!ok(x,y))return;const u=at(x,y),s=S.sel;
+ if(S.over||S.turn!=='p'||!ok(x,y))return;const u=at(x,y),s=S.sel;if(s&&u&&u.type==='carriage'&&u.side==='p'&&canBoard(s,u)){board(s,u);return render()}
  if(s&&u&&u.side==='e'&&!s.acted&&foes(s,s.x,s.y).includes(u)&&visP().has(key(x,y))){strike(s,u);S.sel=null;return render()}
  if(s&&!u&&!s.moved&&reach(s).has(key(x,y))){mv(s,x,y);return render()}
  S.sel=u&&u.side==='p'?u:null;render()}
 async function endTurn(){
- if(S.over||S.turn!=='p')return;S.turn='e';S.sel=null;heal('p');
+ if(S.over||S.turn!=='p')return;S.turn='e';S.sel=null;heal('p');train('p');
  S.gold.e+=inc('e');tick('e');S.units.forEach(u=>{if(u.side==='e')u.moved=u.acted=false});render();await sleep(500);
- let n=0;while(S.gold.e>=4&&S.units.filter(u=>u.side==='e').length<9&&n++<4){
+ let n=0;while(S.gold.e>=4&&S.units.filter(u=>u.side==='e').length<(S.scn===5?34:9)&&n++<4){
   const r=Math.random(),t=has('e','scouting')&&r>.9&&S.gold.e>=3?'scout':S.gold.e>=8&&r<.35?'knight':S.gold.e>=5&&r<.65?'archer':'soldier';if(!recruit('e',t))break;}
  note('The enemy musters its forces.');render();await sleep(500);
  for(const u of S.units.filter(o=>o.side==='e'&&o.type!=='keep')){
-  if(S.over)break;if(!S.units.includes(u)||u.moved||u.acted)continue;aiAct(u);render();await sleep(450)}
- if(S.over)return render();heal('e');
- S.gold.p+=inc('p');tick('p');S.units.forEach(u=>{if(u.side==='p')u.moved=u.acted=false});S.turn='p';
+  if(S.over)break;if(!S.units.includes(u)||u.moved||u.acted)continue;aiAct(u);render();await sleep(S.scn>=4?120:450)}
+ if(S.over)return render();heal('e');train('e');
+ S.gold.p+=inc('p');tick('p');S.tn=(S.tn||1)+1;if(S.scn===4)wave4();S.units.forEach(u=>{if(u.side==='p')u.moved=u.acted=false});S.turn='p';
  note(`Your turn. Income: +${inc('p')} gold, +${sci('p')} science.`);render()}
 function aiVis(){const V=new Set();S.units.forEach(q=>{if(q.side!=='e')return;const r=sight(q);for(let yy=Math.max(0,q.y-r);yy<=Math.min(H-1,q.y+r);yy++)for(let xx=Math.max(0,q.x-r);xx<=Math.min(W-1,q.x+r);xx++)if(Math.abs(xx-q.x)+Math.abs(yy-q.y)<=r){const k=key(xx,yy);V.add(k);S.aseen[k]=1;S.amem[k]=S.own[k]||''}});return V}
 function aiAct(u){
  const R=reach(u),A={atk:atk(u)};let best=null;const AV=aiVis();
- for(const t of R.values())for(const f of foes(u,t.x,t.y).filter(o=>AV.has(key(o.x,o.y)))){
+ for(const t of R.values())for(const f of (u.hold&&t.d?[]:foes(u,t.x,t.y)).filter(o=>AV.has(key(o.x,o.y)))){
   const sc=(A.atk>=f.hp?100:0)+(f.type==='keep'?20:0)+(f.type==='you'?30:0)+A.atk*2-f.hp*.5-t.d*.1;if(!best||sc>best.sc)best={sc,t,f}}
  if(best){if(best.t.d)mv(u,best.t.x,best.t.y);return strike(u,best.f)}
- const mines=[];S.t.forEach((r,y)=>r.forEach((v,x)=>{if(v===2&&S.aseen[key(x,y)]&&S.amem[key(x,y)]!=='e')mines.push({x,y})}));
+ if(u.hold)return;const mines=[];S.t.forEach((r,y)=>r.forEach((v,x)=>{if(v===2&&S.aseen[key(x,y)]&&S.amem[key(x,y)]!=='e')mines.push({x,y})}));
  const pl=S.units.filter(o=>o.side==='p');const near=pl.filter(o=>o.type!=='keep'&&AV.has(key(o.x,o.y))).sort((a,b)=>dist(u,a)-dist(u,b))[0];
- const pk=pl.find(o=>o.type==='keep');if(pk&&AV.has(key(pk.x,pk.y)))S.pk=true;const keep=S.pk?pk:null;
+ const pk=pl.filter(o=>o.type==='keep').sort((a,b)=>dist(u,a)-dist(u,b))[0];if(pk&&AV.has(key(pk.x,pk.y)))S.pk=true;const keep=S.pk?pk:null;
  let goal=near||((u.id%2===0&&mines.length)?mines.sort((a,b)=>dist(u,a)-dist(u,b))[0]:keep);if(!goal){let b=1e9;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(!S.aseen[key(x,y)]){const d=dist(u,{x,y})+x*.5;if(d<b){b=d;goal={x,y}}}}if(!goal)return;
  const PM=pathMap(goal);let bt=null;for(const t of R.values()){const d=(PM.get(key(t.x,t.y))??dist(t,goal)+99)+Math.random()*.3;if(!bt||d<bt.d)bt={d,t}}
  if(bt&&bt.t.d)mv(u,bt.t.x,bt.t.y)}
@@ -150,21 +156,22 @@ function render(){
  const b=document.getElementById('b'),s=S.sel;let h='';
  const R=s&&!s.moved&&S.turn==='p'?reach(s):new Map(),T=s&&!s.acted?foes(s,s.x,s.y):[];
  const V=new Set();S.units.forEach(q=>{if(q.side!=='p')return;const r=sight(q);for(let yy=Math.max(0,q.y-r);yy<=Math.min(H-1,q.y+r);yy++)for(let xx=Math.max(0,q.x-r);xx<=Math.min(W-1,q.x+r);xx++)if(Math.abs(xx-q.x)+Math.abs(yy-q.y)<=r){const k=key(xx,yy);V.add(k);S.seen[k]=1;S.mem[k]=S.own[k]||''}});
+ const SP=new Set();if(s&&s.type==='volley'&&!s.acted)T.forEach(o=>{if(V.has(key(o.x,o.y)))for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)SP.add(key(o.x+a,o.y+b))});
  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-  const k=key(x,y),vis=V.has(k),sn=S.seen[k];const v=S.t[y][x],u=vis?at(x,y):null,cls=['c'];if(!sn){h+='<div class="c fog"></div>';continue}if(v===1)cls.push('mtn');if(v===3)cls.push('riv');if(v===4)cls.push('brg');if(!vis)cls.push('dim');
-  if(R.has(key(x,y))&&!u)cls.push('mv');if(u&&T.includes(u))cls.push('tg');
-  let inner=v===1?'▲':v===3?'≈':v===4?'═':'';if(v===2)inner=`<span class="mine ${S.mem[k]||''}">◆</span>`;
-  if(u){inner+=`<div class="u ${u.side} ${u.type==='keep'?'k':u.type==='you'?'y':''} ${u.acted&&u.side==='p'&&u.type!=='keep'?'done':''} ${s===u?'sel':''} ${u.pf?'pf':''}">${TY[u.type].g}${u.lv?`<em class="st">${'★'.repeat(u.lv)}</em>`:''}<i>${u.hp}</i></div>`}
+  const k=key(x,y),vis=V.has(k),sn=S.seen[k];const v=S.t[y][x],u=vis?at(x,y):null,cls=['c'];if(!sn){h+='<div class="c fog"></div>';continue}if(v===1)cls.push('mtn');if(v===3)cls.push('riv');if(v===4)cls.push('brg');if(!vis)cls.push('dim');if(SP.has(k)&&vis&&!(u&&T.includes(u)))cls.push('sp');
+  if(R.has(key(x,y))&&!u)cls.push('mv');if(u&&s&&u.type==='carriage'&&u.side==='p'&&u!==s&&canBoard(s,u))cls.push('mv');if(u&&T.includes(u))cls.push('tg');
+  let inner=v===1||v===3||v===4?'<span class="gl">'+(v===1?'▲':v===3?'≈':'═')+'</span>':'';if(v===2||v===5)inner=`<span class="mine ${S.mem[k]||''}">${v===5?'♞':'◆'}</span>`;
+  if(u){inner+=`<div class="u ${u.side} ${u.type==='keep'?'k':u.type==='you'?'y':''} ${u.acted&&u.side==='p'&&u.type!=='keep'?'done':''} ${s===u?'sel':''} ${u.pf?'pf':''}">${TY[u.type].g}${u.lv?`<em class="st">${'★'.repeat(u.lv)}</em>`:''}<i>${u.hp}${u.cargo&&u.cargo.length?'+'+u.cargo.length:''}</i></div>`}
   h+=`<div class="${cls.join(' ')}" onclick="click_(${x},${y})">${inner}</div>`}
  if(S.over)h+=`<div class="over"><div><b>${S.over==='p'?'Victory':'Defeat'}</b>${S.scn?`<p class="sub">${S.over==='p'?SCN[S.scn].win+' Progress autosaved.':(S.cause==='you'?'You have fallen in battle. The war is lost.':'Your keep has fallen.')}</p>${S.over==='p'&&SCN[S.scn+1]?'<button onclick="curScn=S.scn+1;showMenu(\'brief\')">Next scenario</button>':''}<button onclick="init(S.scn)">${S.over==='p'?'Play again':'Retry'}</button><button onclick="showMenu('story')">Scenarios</button>`:'<button onclick="init()">Play again</button>'}</div></div>`;
  b.innerHTML=h;
  const pt=S.turn==='p'&&!S.over,free=!!spot('p');
  let info='Select one of your units to move (blue) and attack (red).';
  if(s){const T_=TY[s.type];info=`${T_.n}: ${s.hp}/${s.mh} HP, attack ${atk(s)}, range ${rng(s)}, move ${mvOf(s)}.${s.type==='keep'?'':' Level '+(s.lv||0)+'/5'+((s.lv||0)>=5?' (max).':', XP '+(s.xp||0)+'/'+LV[s.lv||0]+'.')}`}
- document.getElementById('p').innerHTML=`${S.scn?'<h2>Objective</h2><div class="sub">'+SCN[S.scn].pan+'</div>':''}<h2>Treasury</h2><div class="gold">${S.gold.p} gold</div><div class="sub">+${inc('p')} per turn · Enemy: ${S.gold.e} gold, +${inc('e')}</div><h2>Science</h2><div class="sub">+${sci('p')} per turn, ${curTxt()}</div><button onclick="openSci()">Open science board</button>${S.scn?'<h2>Personal force</h2><button onclick="openPf()">Choose units</button>':''}<h2>Game</h2><button ${pt?'':'disabled'} onclick="openSaves()">Save game</button><button ${pt?'':'disabled'} onclick="showMenu('home')">Main menu</button>
+ document.getElementById('p').innerHTML=`${S.scn?'<h2>Objective</h2><div class="sub">'+SCN[S.scn].pan+(S.scn===4?'<br>Wave '+S.wave+' of 5. '+(S.wave<5?'Next wave in '+(1+3*S.wave-S.tn)+' turn(s). ':'The final wave is on the field. ')+'Invaders left: '+S.units.filter(u=>u.side==='e').length+'.':S.scn===5?'<br>Your keeps: '+S.units.filter(u=>u.type==='keep'&&u.side==='p').length+'/3. Enemy keeps: '+S.units.filter(u=>u.type==='keep'&&u.side==='e').length+'/3.':'')+'</div>':''}<h2>Treasury</h2><div class="gold">${S.gold.p} gold</div><div class="sub">+${inc('p')} per turn · Enemy: ${S.gold.e} gold, +${inc('e')}</div><h2>Science</h2><div class="sub">+${sci('p')} per turn, ${curTxt()}</div><button onclick="openSci()">Open science board</button>${S.scn?'<h2>Personal force</h2><button onclick="openPf()">Choose units</button>':''}<h2>Game</h2><button ${pt?'':'disabled'} onclick="openSaves()">Save game</button><button ${pt?'':'disabled'} onclick="showMenu('home')">Main menu</button>
  <h2>Recruit at your keep</h2><button ${pt&&free?'':'disabled'} onclick="openRc()">Recruit units</button>${[].map(t=>`<button ${pt&&free&&S.gold.p>=TY[t].c&&(t!=='scout'||has('p','scouting'))?'':'disabled'} onclick="rec('${t}')">${TY[t].n} (${t==='scout'&&!has('p','scouting')?'locked':TY[t].c})</button>`).join('')}
  <div class="sub">Soldier: sturdy. Archer: range 2. Knight: fast and strong.</div>
- <h2>Selected</h2><div class="msg">${info}</div>
+ <h2>Selected</h2><div class="msg">${info}</div>${s&&s.type==='carriage'&&pt?`<button onclick="unload()" ${s.cargo&&s.cargo.length?'':'disabled'}>Unload (${s.cargo?s.cargo.length:0}/2)</button>`:''}
  <button class="end" ${pt?'':'disabled'} onclick="endTurn()">${S.turn==='p'?'End turn':'Enemy is moving…'}</button>
  <h2>Log</h2><ul class="log">${S.log.map(l=>`<li>${l}</li>`).join('')}</ul>`}
 function click_(x,y){click(x,y)}
@@ -178,7 +185,7 @@ function renderSci(){const m=document.getElementById('m');if(!S.modal){m.innerHT
    h+=`<button class="tc ${done?'dn':''} ${cur?'cr':''}" ${done||lock?'disabled':''} onclick="pick('${id}')"><b>${T.n}</b><span>${T.d}</span><span class="bar"><i style="width:${pts/T.c*100}%"></i></span><small>${done?'Unlocked':lock?'Needs '+TECH[T.req].n:(cur?'Researching ':'Cost ')+pts+'/'+T.c}</small></button>`}
   h+='</div>'}
  m.innerHTML=h+'</div></div>'}
-const _render=render;render=function(){_render();renderSci();drawSv();drawRc();drawPf()};
+const _render=render;render=function(){_render();renderSci();drawSv();drawRc();drawPf();drawEv()};
 let rcOpen=false,rcSel='soldier';
 let pfOpen=false;
 function openPf(){pfOpen=true;drawPf()}
@@ -195,8 +202,8 @@ function openRc(){rcOpen=true;drawRc()}
 function closeRc(){rcOpen=false;drawRc()}
 function drawRc(){const m=document.getElementById('rc');if(!rcOpen){m.innerHTML='';return}
  const ok=S.turn==='p'&&!S.over,free=!!spot('p');
- const cs=recList().map(t=>{const T=TY[t],lock=t==='scout'&&!has('p','scouting');return `<button class="tc ${rcSel===t?'cr':''}" ${lock?'disabled':''} onclick="rcSel='${t}';drawRc()"><b>${T.n}</b><span>${lock?'Locked: research Scouting':`HP ${T.hp} · Attack ${T.atk} · Range ${T.r} · Move ${T.mv}${T.d?'<br>'+T.d:''}`}</span><small>Cost ${T.c} gold</small></button>`}).join('');
- const T=TY[rcSel],can=ok&&free&&S.gold.p>=T.c&&!(rcSel==='scout'&&!has('p','scouting'));
+ const cs=recList().map(t=>{const T=TY[t],lock=(t==='scout'&&!has('p','scouting'))||(NEEDH.includes(t)&&!horses('p'));return `<button class="tc ${rcSel===t?'cr':''}" ${lock?'disabled':''} onclick="rcSel='${t}';drawRc()"><b>${T.n}</b><span>${lock?'Locked: '+(t==='scout'?'research Scouting':'capture a Horse resource'):`HP ${T.hp} · Attack ${T.atk} · Range ${T.r} · Move ${T.mv}${T.d?'<br>'+T.d:''}`}</span><small>Cost ${T.c} gold</small></button>`}).join('');
+ const T=TY[rcSel],can=ok&&free&&S.gold.p>=T.c&&!(rcSel==='scout'&&!has('p','scouting'))&&!(NEEDH.includes(rcSel)&&!horses('p'));
  m.innerHTML=`<div class="sbk" onclick="closeRc()"><div class="sci" onclick="event.stopPropagation()"><div class="sh"><b>Recruit units</b><button onclick="closeRc()">Close</button></div><p class="sub">You have <b>${S.gold.p}</b> gold. Pick a unit, then press Recruit. New units appear next to your keep and can act next turn.</p><div class="tr">${cs}</div><button class="end" ${can?'':'disabled'} onclick="rec(rcSel)">Recruit ${T.n} (${T.c} gold)</button>${free?'':'<p class="sub">No free space next to your keep.</p>'}</div></div>`}
 function rec(t){if(S.turn==='p'&&!S.over&&recruit('p',t)){note(`You recruit a ${TY[t].n}.`);render()}}
 const SK='hollowmere:saves';let STO=SK,storyMsg='',svOpen=false,svAsk=-1,mScr='home',mHelp=false;
@@ -218,7 +225,8 @@ function helpHtml(){return `<div class="sbk" onclick="mHelp=false;drawMenu()"><d
 <li><b>Gold:</b> recruit units at your keep. You earn 3 gold per turn, plus 2 for each mine (◆) you hold. Stand on a mine to capture it.</li>
 <li><b>Units:</b> Soldiers are sturdy, Archers hit from 2 tiles away, Knights are fast and strong, Scouts are fast and fragile but see far.</li>
 <li><b>Science:</b> open the science board and pick an advancement. You make 2 science per turn, and it unlocks when progress reaches its cost. Scouts need the Scouting advancement.</li>
-<li><b>Experience:</b> units earn XP for attacking, and more for destroying an enemy. Each level, up to 5 and shown as stars above the unit, adds health and attack.</li>
+<li><b>Experience:</b> units earn XP for attacking, and more for destroying an enemy. Each level, up to 5 and shown as stars above the unit, adds health and attack. At level 5, Soldiers, Archers, Knights and Horsemen evolve into a stronger class of your choice.</li>
+<li><b>Horses and carriages:</b> a Horse resource (♞) is captured by standing on it. You need one to recruit Horsemen or Carriages. A unit can step onto a friendly Carriage (up to 2 per Carriage) to ride it. Select the Carriage and press Unload to drop them beside it.</li>
 <li><b>Rivers:</b> rivers (≈) cannot be walked across, but arrows can fly over them. Cross at the bridges (═).</li>
 <li><b>Fog of war:</b> black tiles are unexplored. Units see as far as they can move, and the enemy plays by the same rule.</li>
 <li><b>Big map:</b> scroll the map with your mouse wheel, scroll bars, or by dragging on a touch screen.</li>
@@ -233,8 +241,61 @@ function showMenu(s){mScr=s;storyMsg='';STO=(s==='story'||s==='brief')?'hollowme
 const SCN={1:{t:'Scenario 1: Border Skirmish',txt:'You are an ordinary captain in the army of Aldermark, posted to a quiet river border you expected to guard for years. At dawn, riders from the neighboring kingdom of Korvane crossed the line without warning and burned the watchtower at Ashford. The war has begun, and the royal orders reach you within the hour: your company is the only force close enough to strike back. Push east, take the mines to pay for your troops, and break the Korvane outpost before their main army arrives. You lead from the front, and if You fall, the battle is lost.',obj:'Destroy the Korvane outpost (the enemy keep) and keep your own keep standing.'}};
 let curScn=1;
 SCN[1].units=['soldier','archer','knight','scout'];SCN[1].pan='Destroy the Korvane outpost (the enemy keep). If You fall, the battle is lost.';SCN[1].win='The Korvane outpost has fallen and the border is yours. The war is only beginning.';
-SCN[2]={t:'Scenario 2: Turmoil at the River Valley',txt:'Your victory at the border bought only a few days. Korvane has regrouped in the river valley, where the broad River Alder splits the land in two. Their king has raised two fortified keeps on the far bank, and the river can only be crossed at three narrow bridges. Your veterans march with you, and the crown has sent a field healer and a crossbow engineer to support the push. Break both keeps and the valley is yours.',obj:'Destroy both Korvane keeps on the far side of the river, and make sure You survive.',pan:'Destroy both Korvane keeps across the river. It can only be crossed at the three bridges. If You fall, the battle is lost.',win:'Both Korvane keeps lie in ruins and the river valley is yours. But the war is far from over.',units:['soldier','archer','healer','turret']};
+SCN[2]={t:'Scenario 2: Turmoil at the River Valley',txt:'Your victory at the border bought only a few days. Korvane has regrouped in the river valley, where the broad River Alder splits the land in two. Their king has raised two fortified keeps on the far bank, and the river can only be crossed at three narrow bridges. Your veterans march with you, and the crown has sent a field healer and a crossbow engineer to support the push. Break both keeps and the valley is yours.',obj:'Destroy both Korvane keeps on the far side of the river, and make sure You survive.',pan:'Destroy both Korvane keeps across the river. It can only be crossed at the three bridges. If You fall, the battle is lost.',win:'Both Korvane keeps lie in ruins and the river valley is yours. But the war is far from over.',units:['soldier','archer','knight','scout','healer','turret']};
 function getCleared(){try{return +localStorage.getItem('hollowmere:cleared')||0}catch(e){return 0}}
+SCN[3]={t:'Scenario 3: Siege of Chokepass Keep',txt:'Your force has made camp at the foot of Mount Korrath. At its summit stands Chokepass Keep, a fortress Korvane needs to keep its advance alive. Scouts report only one road up the mountain, a narrow pass lined with at least a dozen archers, where an army can be shot apart one soldier at a time. But the locals whisper that goat herders and smugglers use another trail somewhere in the far south, hidden among the cliffs. Horses are scarce in these hills, so capture a Horse resource if you want to raise Horsemen and Carriages. Take the keep.',obj:'Destroy Chokepass Keep at the summit, and make sure You survive.',pan:'Destroy Chokepass Keep on the summit. The main pass is held by archers, and rumor says a hidden route runs through the south. If You fall, the battle is lost.',win:'Chokepass Keep has fallen and the mountain is yours. The Korvane advance has been broken.',units:['soldier','archer','knight','scout','horsemen','carriage']};
+const EVO={soldier:['guard','rogue'],archer:['longbow','volley'],knight:['battlemaster','trainer'],horsemen:['heavycav','pistol']},ARCH=['archer','longbow','volley'],CTR=['guard','battlemaster'];
+function evolve(u,to){const from=TY[u.type].n;u.type=to;u.lv=0;u.xp=0;u.evo=false;u.tr=0;u.mh=TY[to].hp+(has(u.side,'plate')?2:0);u.hp=u.mh;note(`${side(u)} ${from} evolves into ${TY[to].n}!`)}
+function chooseEvo(id,to){const u=S.units.find(o=>o.id===id);if(u&&u.evo)evolve(u,to);render()}
+function drawEv(){const m=document.getElementById('ev'),u=S.units.find(o=>o.side==='p'&&o.evo);if(!u){m.innerHTML='';return}
+ m.innerHTML=`<div class="sbk"><div class="sci"><div class="sh"><b>${TY[u.type].n} evolution</b></div><p class="sub">Your ${TY[u.type].n} has reached level 5. Choose its path. It returns to level 0 and is fully healed.</p><div class="tr">${EVO[u.type].map(t=>{const T=TY[t];return `<button class="tc" onclick="chooseEvo(${u.id},'${t}')"><b>${T.n}</b><span>HP ${T.hp} · Attack ${T.atk} · Range ${T.r} · Move ${T.mv}<br>${T.d}</span><small>Choose</small></button>`}).join('')}</div></div></div>`}
+function adjFree(c){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const x=c.x+dx,y=c.y+dy;if(ok(x,y)&&!at(x,y))return{x,y}}return null}
+function train(s){S.units.filter(t=>t.side===s&&t.type==='trainer').forEach(t=>{t.tr=(t.tr||0)+1;if(t.tr>=3){const p=adjFree(t);if(p){t.tr=0;const k=add('knight',s,p.x,p.y);k.moved=k.acted=true;note(`${side(t)} Trainer trains a Knight.`)}else t.tr=2}})}
+function splash(a,list){for(const o of list){if(!S.units.includes(o))continue;const d2=atk(a,o);o.hp-=d2;gain(a,o.hp<=0?8:3);note(`${side(a)} volley also hits ${side(o)} ${TY[o.type].n} for ${d2}.`);if(o.hp<=0){S.units=S.units.filter(q=>q!==o);note(`${side(o)} ${TY[o.type].n} falls.`);if(o.type==='you'||o.type==='general'||(o.type==='keep'&&!S.units.some(q=>q.type==='keep'&&q.side===o.side))){S.over=a.side;S.cause=o.type;saveForce()}}}}
+SCN[4]={t:'Scenario 4: Defense of the Great Plains',txt:'The fall of Chokepass Keep has enraged the Korvane king, and he has thrown every remaining soldier into one last invasion. Two great hosts are marching across the Great Plains, one from the west and one from the east, both aimed at your forward keep in the center of the plains. There will be no retreat and no reinforcements. You have a keep, mines you can work at once, and the land itself. Hold the bridges, use the hills, and break the invasion wave by wave.',obj:'Defeat all 5 waves of the Korvane invasion. Keep your keep standing, and make sure You survive.',pan:'Defeat all 5 invasion waves from both sides. Your keep and You must survive.',win:'The last Korvane invader falls on the Great Plains. The invasion is broken, and the war turns in your favor.',units:['soldier','archer','knight','healer','turret']};
+function wave4(){if(S.wave<5&&(S.tn-1)%3===0)spawnWave(S.wave++)}
+function spawnWave(k){const P=[['soldier','soldier','archer'],['soldier','archer','knight'],['soldier','archer','knight','knight'],['knight','archer','archer','soldier'],['knight','knight','archer','soldier','horsemen']],n=[3,4,5,6,7][k];
+ [0,1].forEach(sd=>{for(let i=0;i<n;i++){const ty=P[k][i%P[k].length];let placed=false;for(let c=0;c<3&&!placed;c++){const x=sd?W-1-c:c;for(let j=0;j<H&&!placed;j++){const y=(i*3+j*5+k)%H;if(ok(x,y)&&!at(x,y)){add(ty,'e',x,y);placed=true}}}}});
+ note(`Wave ${k+1} of 5 approaches from both sides!`)}
+function setup4(){S.scn=4;S.gold={p:16,e:0};S.tn=1;S.wave=0;S.pk=true;const t=S.t;
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++)t[y][x]=0;
+ for(let y=0;y<H;y++){t[y][6]=3;t[y][17]=3}
+ [3,8,13].forEach(y=>{t[y][6]=4;t[y][17]=4});
+ [[7,1],[7,2],[7,5],[7,6],[7,10],[7,11],[7,14],[7,15],[5,5],[5,11],[3,2],[3,13],[9,3],[9,13]].forEach(([x,y])=>{t[y][x]=1;t[y][23-x]=1});
+ [[9,6],[9,10],[13,6],[13,10],[11,5],[11,11]].forEach(([x,y])=>t[y][x]=2);
+ add('keep','p',11,8);add('you','p',11,9);
+ if(getForce().length)loadForce();else[[10,8],[12,8],[11,7],[10,9],[12,9]].forEach(([x,y],i)=>add(i<3?'soldier':'archer','p',x,y));
+ S.wave=1;spawnWave(0);note('Objective: defeat all 5 waves of the invasion.')}
+SCN[5]={t:'Scenario 5: The Final Battle',txt:'Everything has led to this. The Korvane king has gathered his entire army on the open plains, and Aldermark has answered with its own. Each side holds three great keeps and ten mines, and there is nowhere to hide: no mountains, no rivers, only open ground and the will to win. Both armies are already in position, and the war ends here, one way or the other. The battle begins.',obj:'Destroy all 3 Korvane keeps, or slay the Korvane General. If all 3 of your keeps fall, or You fall, the war is lost.',pan:'Destroy all 3 Korvane keeps, or slay the Korvane General. You lose if all 3 of your keeps fall, or if You fall.',win:'The last Korvane keep falls and the war is won. Aldermark is saved, and the people sing your name.',units:['soldier','archer','knight','scout','healer','turret','horsemen','carriage']};
+spot=function(s){for(const k of S.units.filter(u=>u.type==='keep'&&u.side===s)){const p=adjFree(k);if(p)return p}return null};
+function setup5(){S.scn=5;S.gold={p:20,e:20};S.pk=true;const t=S.t;
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++)t[y][x]=0;
+ [[2,3],[1,8],[2,13]].forEach(([x,y])=>{add('keep','p',x,y);add('keep','e',23-x,y)});
+ [[3,6],[3,10],[5,2],[5,5],[5,11],[5,14],[7,4],[7,8],[7,12],[9,9]].forEach(([x,y])=>{t[y][x]=2;S.own[key(x,y)]='p';t[y][23-x]=2;S.own[key(23-x,y)]='e'});
+ [[4,2],[4,14]].forEach(([x,y])=>{t[y][x]=5;S.own[key(x,y)]='p';t[y][23-x]=5;S.own[key(23-x,y)]='e'});
+ add('you','p',2,8);
+ [['knight',8,4],['knight',8,8],['knight',8,12],['horsemen',8,6],['horsemen',8,10],['soldier',7,3],['soldier',7,5],['soldier',7,7],['soldier',7,9],['soldier',7,11],['soldier',7,13],['archer',5,3],['archer',5,6],['archer',5,8],['archer',5,10],['archer',5,13],['healer',4,5],['healer',4,11],['turret',4,8],['scout',6,3]].forEach(([ty,x,y])=>{add(ty,'p',x,y);add(ty,'e',23-x,y)});
+ [['soldier',17,6],['soldier',17,10],['archer',18,7],['knight',17,8]].forEach(([ty,x,y])=>add(ty,'e',x,y));
+ add('general','e',21,8);loadForce();note('The battle begins! Destroy all 3 Korvane keeps, or slay the General.')}
+function canBoard(u,c){if(!c.cargo||c.cargo.length>=2||u.moved||u.type==='carriage'||u.type==='keep'||u.type==='you'||u===c||u.side!==c.side)return false;for(const t of reach(u).values())if(dist(t,c)===1)return true;return false}
+function board(u,c){S.units=S.units.filter(o=>o!==u);u.moved=u.acted=true;c.cargo.push(u);S.sel=c;note(`${TY[u.type].n} boards the Carriage.`)}
+function unload(){const c=S.sel;if(!c||!c.cargo||!c.cargo.length||S.turn!=='p')return;const free=[];for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const x=c.x+dx,y=c.y+dy;if(ok(x,y)&&!at(x,y))free.push({x,y})}let n=0;while(c.cargo.length&&free.length){const u=c.cargo.shift(),p=free.shift();u.x=p.x;u.y=p.y;u.moved=true;u.acted=false;S.units.push(u);n++}note(n?`Unloaded ${n} unit(s).`:'No free space to unload.');render()}
+function setup3(){S.scn=3;S.gold={p:14,e:8};const t=S.t;
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++)t[y][x]=0;
+ for(let y=0;y<H;y++)for(let x=8;x<=18;x++)t[y][x]=1;
+ for(let y=0;y<H;y++)for(let x=19;x<W;x++)if(y<3||y>13)t[y][x]=1;
+ for(let x=8;x<=18;x++)t[8][x]=0;
+ [[11,7],[13,9],[15,7],[17,9]].forEach(([x,y])=>t[y][x]=0);
+ [[8,14],[9,14],[10,14],[11,14],[11,13],[12,13],[13,13],[13,14],[14,14],[15,14],[16,14],[16,13],[17,13],[18,13]].forEach(([x,y])=>t[y][x]=0);
+ [[3,2],[5,3],[2,13],[5,14],[6,6],[6,9]].forEach(([x,y])=>t[y][x]=1);
+ [[3,5],[4,11],[20,5],[20,11]].forEach(([x,y])=>t[y][x]=2);
+ [[6,4],[5,12]].forEach(([x,y])=>t[y][x]=5);
+ add('keep','p',1,8);add('keep','e',22,8);add('you','p',2,8);
+ if(getForce().length)loadForce();else{add('soldier','p',2,7);add('soldier','p',2,9);add('archer','p',3,8)}
+ const A=[];for(let x=10;x<=18;x++)A.push([x,8]);A.push([11,7],[13,9],[15,7]);
+ A.forEach(([x,y])=>{add('archer','e',x,y).hold=true});
+ add('soldier','e',21,7);add('soldier','e',21,9);add('knight','e',20,8);add('soldier','e',20,12);
+ note('Objective: destroy Chokepass Keep on the summit.')}
 function getAuto(){try{return JSON.parse(localStorage.getItem('hollowmere:auto'))}catch(e){return null}}
 function autoRow(){const a=getAuto();return a?`<div class="slot"><div><b>Autosave</b><small>Cleared Scenario ${a.cleared} · ${new Date(a.ts).toLocaleString()}</small></div><div><button onclick="loadAuto()">Continue</button></div></div>`:''}
 function loadAuto(){const a=getAuto();if(!a)return;try{localStorage.setItem('hollowmere:force',JSON.stringify(a.force||[]));localStorage.setItem('hollowmere:cleared',a.cleared)}catch(e){}curScn=SCN[a.cleared+1]?a.cleared+1:a.cleared;showMenu('brief')}
