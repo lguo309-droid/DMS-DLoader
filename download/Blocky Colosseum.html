@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blocky Colosseum</title>
+<style>
+:root{--bg:#1b1410;--panel:#2a1f17ee;--fg:#f7ecd8;--gold:#ffd24a;--red:#e8493b;--blue:#4db8ff;color-scheme:dark;box-sizing:border-box}
+@media (prefers-color-scheme: dark){:root{--bg:#1b1410}}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+canvas{display:block;width:100%;height:100%}
+#hud{position:fixed;inset:0;pointer-events:none;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+#cross{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;background:#fff;border:1px solid #000;opacity:.8}
+.box{position:absolute;background:#0008;border:2px solid #000;padding:6px 10px;font-weight:700;font-size:14px;text-shadow:1px 1px 0 #000}
+#top{left:10px;top:calc(env(safe-area-inset-top,0px) + 10px);min-width:190px}
+#inv{right:10px;top:calc(env(safe-area-inset-top,0px) + 10px);text-align:right;line-height:1.5}
+.bar{height:12px;background:#000a;border:1px solid #000;margin:4px 0}
+.bar i{display:block;height:100%}
+#hp i{background:var(--red);width:100%}#xp i{background:var(--blue);width:0}
+#hint{left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 30px);display:none}
+#toast{left:50%;transform:translateX(-50%);top:22%;display:none;font-size:18px;text-align:center}
+#hit{position:absolute;inset:0;box-shadow:inset 0 0 100px var(--red);opacity:0;transition:opacity .3s}
+#menu,#shop{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;background:#120c08e6}
+#shop{display:none}
+#shop .p{background:var(--panel);border:3px solid #000;padding:18px;max-width:460px;width:100%;text-align:left}
+h1{font-size:clamp(2rem,8vw,3.6rem);margin:0 0 8px;color:var(--gold);text-shadow:3px 3px 0 #000;letter-spacing:.05em}
+h2{margin:0 0 10px;color:var(--gold)}
+p{max-width:480px;line-height:1.55;opacity:.9;margin:6px 0}
+b{color:var(--gold)}
+button,.btn{font:inherit;font-weight:700;color:var(--fg);background:#5a3d24;border:2px solid #000;padding:8px 14px;margin:3px;cursor:pointer;box-shadow:inset 0 -4px #0005}
+button:hover{background:#7a5532}
+.row{display:flex;justify-content:space-between;align-items:center;margin:4px 0}
+.btn{display:inline-block;margin-top:16px;padding:12px 30px;background:#c9871f}
+</style>
+</head>
+<body>
+<div id="hud">
+  <div id="cross"></div>
+  <div class="box" id="top"><div id="lv">LV 1 &nbsp; ⚔ Round 0</div><div class="bar" id="hp"><i></i></div><div class="bar" id="xp"><i></i></div><div id="gear"></div></div>
+  <div class="box" id="inv"></div>
+  <div class="box" id="hint"></div>
+  <div class="box" id="toast"></div>
+  <div id="hit"></div>
+</div>
+<div id="shop"><div class="p" id="shopp"></div></div>
+<div id="menu">
+  <h1>BLOCKY COLOSSEUM</h1>
+  <p id="msg">Gather wood, stone and iron outside the walls. Sell to the merchant, buy gear, level up — then prove yourself in the arena.</p>
+  <p><b>WASD</b> move · <b>Shift</b> sprint · <b>Click</b>/<b>Space</b> mine or strike · <b>E</b> talk<br>If the mouse isn't captured: drag to look, arrow keys also turn.</p>
+  <div class="btn" id="btn">CLICK TO ENTER</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const R=Math.random;
+const renderer=new THREE.WebGLRenderer({antialias:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+document.body.prepend(renderer.domElement);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x8ecbff);
+scene.fog=new THREE.Fog(0x8ecbff,30,95);
+const cam=new THREE.PerspectiveCamera(75,1,0.1,150);
+cam.rotation.order='YXZ';scene.add(cam);
+function resize(){renderer.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+scene.add(new THREE.AmbientLight(0xffffff,0.65));
+const sun=new THREE.DirectionalLight(0xfff2cc,0.8);sun.position.set(30,50,20);scene.add(sun);
+
+function tex(hex,v,rep){
+  const c=document.createElement('canvas');c.width=c.height=16;const x=c.getContext('2d');
+  const r=hex>>16&255,g=hex>>8&255,b=hex&255;
+  for(let i=0;i<16;i++)for(let j=0;j<16;j++){const k=1+(R()-.5)*v;x.fillStyle=`rgb(${r*k|0},${g*k|0},${b*k|0})`;x.fillRect(i,j,1,1)}
+  const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep,rep);return t;
+}
+const mat=c=>new THREE.MeshLambertMaterial({color:c});
+const box=(w,h,d,c,x,y,z,p)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);(p||scene).add(m);return m};
+
+// ground
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(160,160),new THREE.MeshLambertMaterial({map:tex(0x5fa83a,.35,160)}));
+ground.rotation.x=-Math.PI/2;scene.add(ground);
+const sand=new THREE.Mesh(new THREE.CircleGeometry(14.6,48),new THREE.MeshLambertMaterial({map:tex(0xe3cc8a,.25,14)}));
+sand.rotation.x=-Math.PI/2;sand.position.y=.03;scene.add(sand);
+
+// colosseum (instanced blocks)
+const mats=[];
+[[14.5,16,6],[16,17.5,4],[17.5,19,2]].forEach(([a,b,h])=>{
+  for(let r=a+.5;r<b;r++){const n=Math.floor(Math.PI*2*r);
+    for(let i=0;i<n;i++){const an=i/n*Math.PI*2,x=Math.sin(an)*r,z=Math.cos(an)*r;
+      if(z>0&&Math.abs(x)<2.5)continue;
+      for(let y=0;y<h;y++){const m=new THREE.Matrix4();m.compose(new THREE.Vector3(x,y+.5,z),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),an),new THREE.Vector3(1,1,1));mats.push(m)}}}
+});
+const inst=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial({map:tex(0xd9c9a3,.3,1)}),mats.length);
+const col=new THREE.Color();
+mats.forEach((m,i)=>{inst.setMatrixAt(i,m);col.setScalar(.82+R()*.25);inst.setColorAt(i,col)});
+scene.add(inst);
+[-3.3,3.3].forEach(x=>{box(1.2,8,1.2,0xc9b88f,x,4,16.8);box(1.6,.6,1.6,0xaa9a72,x,8.2,16.8)});
+box(7.8,1,1.4,0xc9b88f,0,8.5,16.8);
+
+const obst=[];
+function wall(o,r){
+  const d=Math.hypot(o.x,o.z);
+  if(d>14.5-r&&d<19+r){
+    if(o.z>0&&Math.abs(o.x)<2.5){const l=2.5-r;o.x=Math.max(-l,Math.min(l,o.x));return}
+    const k=d<16.75?(14.5-r):(19+r);o.x=o.x/d*k;o.z=o.z/d*k;
+  }
+  for(const p of obst){const dx=o.x-p.x,dz=o.z-p.z,dd=Math.hypot(dx,dz),m=p.r+r;if(dd<m&&dd>0){o.x=p.x+dx/dd*m;o.z=p.z+dz/dd*m}}
+  const L=76;o.x=Math.max(-L,Math.min(L,o.x));o.z=Math.max(-L,Math.min(L,o.z));
+}
+
+// humanoids
+function human(skin,shirt,pants,helm){
+  const g=new THREE.Group();
+  box(.8,1.1,.4,shirt,0,1.35,0,g);
+  box(.5,.5,.5,skin,0,2.15,0,g);
+  const legs=[-.2,.2].map(x=>{const p=new THREE.Group();p.position.set(x,.8,0);box(.35,.8,.35,pants,0,-.4,0,p);g.add(p);return p});
+  const arms=[-.58,.58].map(x=>{const p=new THREE.Group();p.position.set(x,1.85,0);box(.3,.9,.3,skin,0,-.4,0,p);g.add(p);return p});
+  if(helm){box(.58,.22,.58,helm,0,2.42,0,g);box(.12,.3,.5,0xcc2222,0,2.65,0,g)}
+  g.userData={legs,arms};return g;
+}
+function stall(x,z,roof,cloth){
+  box(2.6,1,1.2,0x7a5532,x,.5,z);
+  [[-1.2,-.5],[1.2,-.5],[-1.2,.5],[1.2,.5]].forEach(([a,b])=>box(.15,2.6,.15,0x4a3320,x+a,1.3,z+b));
+  box(3,.2,1.8,roof,x,2.7,z);box(3,.3,.1,cloth,x,2.45,z+.9);
+  obst.push({x,z,r:1.5});
+}
+const merch=human(0xe0b48a,0x2e8b3d,0x4a3320);merch.position.set(7,0,22.8);merch.rotation.y=Math.PI;scene.add(merch);stall(7,24.4,0xcc3333,0xffffff);
+const master=human(0xd9a679,0x6a2fa0,0x222222,0x999999);master.position.set(-7,0,24);master.rotation.y=Math.PI;scene.add(master);
+box(.2,5,.2,0x4a3320,-9.5,2.5,24);box(1.6,1.6,.1,0x6a2fa0,-9.5+.9,4.2,24);obst.push({x:-7,z:24,r:.8});
+const NPC={merch:{x:7,z:22.8},master:{x:-7,z:24}};
+
+// resource nodes
+const nodes=[],tdef={wood:{hp:3,y:[2,4]},stone:{hp:4,y:[2,3]},iron:{hp:5,y:[3,5]}};
+function makeNode(type,x,z){
+  const g=new THREE.Group();g.position.set(x,0,z);
+  if(type==='wood'){box(.8,3,.8,0x6b4423,0,1.5,0,g);box(3,2,3,0x2f8f3a,0,3.6,0,g);box(1.8,1.3,1.8,0x3aa648,0,5.2,0,g)}
+  else if(type==='stone'){box(1.8,1.2,1.8,0x8a8d90,0,.6,0,g);box(1,.8,1,0x9da0a3,.3,1.5,.2,g)}
+  else{box(1.7,1.7,1.7,0x777a7d,0,.85,0,g);[[.86,.2],[-.86,-.2]].forEach(([a,b])=>{box(.12,.5,.5,0xd98a4a,a,1.1,b,g);box(.5,.5,.12,0xd98a4a,b,.6,a,g)})}
+  scene.add(g);
+  const n={g,type,x,z,hp:tdef[type].hp,alive:true,t:0};g.userData.node=n;nodes.push(n);obst.push({x,z,r:type==='wood'?.8:1.2});
+}
+for(let i=0;i<52;i++){
+  const a=R()*6.28,r=25+R()*45,x=Math.sin(a)*r,z=Math.cos(a)*r;
+  if(Math.hypot(x-0,z-34)<8||Math.hypot(x-7,z-24)<5||Math.hypot(x+7,z-24)<5)continue;
+  const t=R();makeNode(t<.45?'wood':t<.8?'stone':'iron',x,z);
+}
+
+// player
+const P={x:0,z:34,yaw:Math.PI*0,pitch:0,hp:100,maxhp:100,lvl:1,xp:0,gold:0,sword:0,armor:0,cd:0,hurt:0,bob:0,swing:0,inv:{wood:0,stone:0,iron:0}};
+const price={wood:3,stone:5,iron:12};
+let keys={},locked=false,dragging=false,started=false,ui=false,round=0,fightOn=false,enemies=[],bursts=[];
+const hand=new THREE.Group();hand.position.set(.4,-.35,-.7);cam.add(hand);
+const blade=box(.1,.8,.08,0x9a6b3a,0,.35,0,hand);box(.3,.08,.1,0x4a3320,0,-.02,0,hand);box(.07,.25,.07,0x4a3320,0,-.15,0,hand);
+const swordCols=[0x9a6b3a,0xb8c0c8,0x4de0ff,0xffd24a,0xff5577,0xc080ff];
+
+// ui helpers
+let toastT;
+function toast(s){const t=$('toast');t.textContent=s;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',2600)}
+function dmg(){return 6+P.sword*4+(P.lvl-1)}
+function hud(){
+  $('lv').innerHTML=`LV ${P.lvl} &nbsp; ⚔ Round ${round} &nbsp; 🪙 ${P.gold}`;
+  $('hp').firstChild.style.width=Math.max(0,P.hp/P.maxhp*100)+'%';
+  $('xp').firstChild.style.width=(P.xp/(40*P.lvl)*100)+'%';
+  $('gear').innerHTML=`Sword +${P.sword} · Armor +${P.armor} · Dmg ${dmg()}`;
+  $('inv').innerHTML=`🪵 Wood ${P.inv.wood}<br>🪨 Stone ${P.inv.stone}<br>⛏ Iron ${P.inv.iron}`;
+  blade.material.color.setHex(swordCols[Math.min(P.sword,5)]);
+}
+function addXp(n){P.xp+=n;while(P.xp>=40*P.lvl){P.xp-=40*P.lvl;P.lvl++;P.maxhp+=10;P.hp=P.maxhp;toast('LEVEL UP! You are level '+P.lvl)}}
+function shop(){
+  const sc=30*(P.sword+1),ac=25*(P.armor+1);
+  let h=`<h2>🏺 Merchant</h2><p>Gold: <b>${P.gold}</b></p>`;
+  ['wood','stone','iron'].forEach(k=>h+=`<div class="row"><span>${k} ×${P.inv[k]} (${price[k]}g each)</span><button data-a="sell:${k}">Sell all</button></div>`);
+  h+=`<hr><div class="row"><span>Better sword (+4 dmg)</span><button data-a="sword">${sc}g</button></div>
+  <div class="row"><span>${P.armor>=6?'Armor maxed':'Armor (−8% damage)'}</span><button data-a="armor">${ac}g</button></div>
+  <div class="row"><span>Healing potion (+50 HP)</span><button data-a="potion">15g</button></div>
+  <div style="text-align:center;margin-top:10px"><button data-a="close">Close [E]</button></div>`;
+  $('shopp').innerHTML=h;
+}
+$('shopp').addEventListener('click',e=>{
+  const a=e.target.dataset&&e.target.dataset.a;if(!a)return;
+  if(a.startsWith('sell:')){const k=a.slice(5),n=P.inv[k];if(!n)return toast('Nothing to sell');const g=n*price[k];P.inv[k]=0;P.gold+=g;addXp(g);toast(`Sold for ${g} gold (+${g} XP)`)}
+  else if(a==='sword'){const c=30*(P.sword+1);if(P.gold<c)return toast('Not enough gold');P.gold-=c;P.sword++}
+  else if(a==='armor'){const c=25*(P.armor+1);if(P.armor>=6||P.gold<c)return toast('Cannot buy');P.gold-=c;P.armor++}
+  else if(a==='potion'){if(P.gold<15)return toast('Not enough gold');P.gold-=15;P.hp=Math.min(P.maxhp,P.hp+50)}
+  else if(a==='close')return closeShop();
+  hud();shop();
+});
+function openShop(){ui=true;shop();$('shop').style.display='flex';if(document.exitPointerLock)document.exitPointerLock()}
+function closeShop(){ui=false;$('shop').style.display='none';lock()}
+function lock(){try{const r=renderer.domElement.requestPointerLock();if(r&&r.catch)r.catch(()=>{})}catch(e){}}
+
+// fighting
+function startFight(){
+  if(enemies.length)return toast('Finish the current fight!');
+  round++;fightOn=true;const n=Math.min(2+round,9);
+  for(let i=0;i<n;i++){
+    const g=human(0xc98d62,0xa02020,0x555555,0x8a8d90);box(.1,1,.6,0x777777,.8,1.4,0,g);
+    const a=R()*6.28,r=6+R()*5;g.position.set(Math.sin(a)*r,0,Math.cos(a)*r);scene.add(g);
+    const e={g,hp:18+round*7,max:18+round*7,sp:Math.min(4,2.5+round*.12),cd:1+R(),t:R()*9,flash:0,swing:0};
+    g.userData.enemy=e;enemies.push(e);
+  }
+  toast(`ROUND ${round} — ${n} gladiators enter the arena!`);hud();
+}
+function burst(p,c){for(let i=0;i<8;i++){const m=box(.18,.18,.18,c,p.x,p.y,p.z);bursts.push({m,v:new THREE.Vector3(R()-.5,R()*.8,R()-.5).multiplyScalar(5),t:.6})}}
+const ray=new THREE.Raycaster();ray.far=3.6;
+function strike(){
+  if(!P.alive&&P.alive!==undefined&&false)return;
+  if(P.cd>0||ui||!started)return;P.cd=.45;P.swing=1;
+  ray.setFromCamera({x:0,y:0},cam);
+  const targets=enemies.map(e=>e.g).concat(nodes.filter(n=>n.alive).map(n=>n.g));
+  const hits=ray.intersectObjects(targets,true);if(!hits.length)return;
+  let o=hits[0].object;while(o&&!o.userData.enemy&&!o.userData.node)o=o.parent;if(!o)return;
+  const ep=hits[0].point;
+  if(o.userData.enemy){
+    const e=o.userData.enemy;e.hp-=dmg();e.flash=.12;burst(ep,0xaa1111);
+    const d=Math.hypot(e.g.position.x-P.x,e.g.position.z-P.z)||1;e.g.position.x+=(e.g.position.x-P.x)/d*.8;e.g.position.z+=(e.g.position.z-P.z)/d*.8;
+    if(e.hp<=0){scene.remove(e.g);enemies.splice(enemies.indexOf(e),1);const gold=15+round*5;P.gold+=gold;addXp(15+round*3);toast(`Gladiator down! +${gold} gold`);
+      if(!enemies.length){fightOn=false;const b=30+round*15;P.gold+=b;addXp(20+round*5);setTimeout(()=>toast(`ROUND ${round} CLEARED! Bonus +${b} gold. Talk to the Arena Master for more.`),2700)}}
+    hud();
+  }else{
+    const n=o.userData.node;n.hp--;burst(ep,n.type==='wood'?0x2f8f3a:0x999999);
+    if(n.hp<=0){const q=2+Math.floor(R()*2);P.inv[n.type]+=q;toast(`+${q} ${n.type}`);n.alive=false;n.g.visible=false;n.t=25;
+      const i=obst.findIndex(p=>p.x===n.x&&p.z===n.z);if(i>=0)obst.splice(i,1);hud()}
+  }
+}
+
+// input
+$('menu').addEventListener('click',()=>{$('menu').style.display='none';started=true;lock();hud()});
+document.addEventListener('pointerlockchange',()=>{
+  locked=document.pointerLockElement===renderer.domElement;
+  if(!locked&&started&&!ui){$('btn').textContent='RESUME';$('msg').textContent='Paused.';$('menu').style.display='flex'}
+});
+addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(e.code==='Space'){e.preventDefault();strike()}
+  if(e.code==='KeyE'&&started){
+    if(ui)return closeShop();
+    const dm=Math.hypot(P.x-NPC.merch.x,P.z-NPC.merch.z),da=Math.hypot(P.x-NPC.master.x,P.z-NPC.master.z);
+    if(dm<4)openShop();else if(da<4)startFight();
+  }
+});
+addEventListener('keyup',e=>keys[e.code]=false);
+addEventListener('mousemove',e=>{if(!started||ui||$('menu').style.display!=='none')return;if(locked||dragging){P.yaw-=e.movementX*.0022;P.pitch=Math.max(-1.4,Math.min(1.4,P.pitch-e.movementY*.0022))}});
+renderer.domElement.addEventListener('mousedown',()=>{if(locked)strike();else dragging=true});
+addEventListener('mouseup',()=>dragging=false);
+
+// loop
+let last=performance.now();
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  const run=started&&!ui&&$('menu').style.display==='none';
+  if(run){
+    if(keys.ArrowLeft)P.yaw+=2*dt;if(keys.ArrowRight)P.yaw-=2*dt;
+    if(keys.ArrowUp)P.pitch=Math.min(1.4,P.pitch+1.5*dt);if(keys.ArrowDown)P.pitch=Math.max(-1.4,P.pitch-1.5*dt);
+    const f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0),sp=keys.ShiftLeft||keys.ShiftRight?8.5:5;
+    if(f||s){const l=Math.hypot(f,s);P.x+=(-Math.sin(P.yaw)*f+Math.cos(P.yaw)*s)/l*sp*dt;P.z+=(-Math.cos(P.yaw)*f-Math.sin(P.yaw)*s)/l*sp*dt;P.bob+=dt*sp*1.5}
+    wall(P,.4);P.cd-=dt;P.hurt-=dt;
+    if(keys.KeyF)strike();
+    for(const e of enemies){
+      e.t+=dt;e.cd-=dt;
+      const dx=P.x-e.g.position.x,dz=P.z-e.g.position.z,d=Math.hypot(dx,dz);
+      const mv=d>1.7&&d<30;
+      if(mv){e.g.position.x+=dx/d*e.sp*dt;e.g.position.z+=dz/d*e.sp*dt}
+      const q={x:e.g.position.x,z:e.g.position.z};wall(q,.5);e.g.position.x=q.x;e.g.position.z=q.z;
+      for(const o of enemies)if(o!==e){const ox=e.g.position.x-o.g.position.x,oz=e.g.position.z-o.g.position.z,od=Math.hypot(ox,oz);if(od<1&&od>0){e.g.position.x+=ox/od*dt*2;e.g.position.z+=oz/od*dt*2}}
+      e.g.rotation.y=Math.atan2(dx,dz);
+      const u=e.g.userData;u.legs[0].rotation.x=mv?Math.sin(e.t*8)*.6:0;u.legs[1].rotation.x=mv?-Math.sin(e.t*8)*.6:0;
+      if(d<=1.9&&e.cd<=0){e.cd=1.1;e.swing=.3;const dm=(5+round*1.2)*(1-P.armor*.08);P.hp-=dm;P.hurt=.3;hud();$('hit').style.opacity=1;setTimeout(()=>$('hit').style.opacity=0,150)}
+      e.swing-=dt;u.arms[1].rotation.x=e.swing>0?-1.6:0;
+      e.g.children.forEach(c=>{if(c.material&&c.material.emissive)c.material.emissive.setHex(e.flash>0?0x992222:0)});e.flash-=dt;
+    }
+    if(P.hp<=0){
+      P.gold=Math.floor(P.gold/2);P.hp=P.maxhp;P.x=0;P.z=34;enemies.forEach(e=>scene.remove(e.g));enemies=[];fightOn=false;
+      toast('You fell! Lost half your gold. The fight is cancelled.');hud();
+    }
+    nodes.forEach(n=>{if(!n.alive&&(n.t-=dt)<=0){n.alive=true;n.hp=tdef[n.type].hp;n.g.visible=true;obst.push({x:n.x,z:n.z,r:n.type==='wood'?.8:1.2})}});
+    // hints
+    const dm=Math.hypot(P.x-NPC.merch.x,P.z-NPC.merch.z),da=Math.hypot(P.x-NPC.master.x,P.z-NPC.master.z),h=$('hint');
+    if(dm<4){h.textContent='[E] Trade with the Merchant';h.style.display='block'}
+    else if(da<4){h.textContent=enemies.length?'Fight in progress!':'[E] Start Round '+(round+1);h.style.display='block'}
+    else h.style.display='none';
+  }
+  P.swing=Math.max(0,P.swing-dt*4);
+  hand.rotation.x=-P.swing*1.3;hand.position.y=-.35+Math.sin(P.bob)*.015;
+  for(let i=bursts.length-1;i>=0;i--){const b=bursts[i];b.t-=dt;b.v.y-=12*dt;b.m.position.addScaledVector(b.v,dt);if(b.t<=0){scene.remove(b.m);bursts.splice(i,1)}}
+  merch.userData.arms[0].rotation.x=Math.sin(now/600)*.1;
+  cam.position.set(P.x,1.7+Math.sin(P.bob)*.05,P.z);cam.rotation.set(P.pitch,P.yaw,0);
+  renderer.render(scene,cam);
+}
+hud();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
