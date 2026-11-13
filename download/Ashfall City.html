@@ -21,12 +21,12 @@ canvas{display:block}.hud{position:fixed;pointer-events:none;z-index:2}.off{disp
 </style></head><body>
 <div id="cross" class="hud">+</div><div id="top" class="hud"></div><div id="hp" class="hud"><i id="hpb"></i></div>
 <div id="tip" class="hud"></div><div id="bar" class="hud"></div><div id="toast" class="hud"></div><div id="dmg" class="hud"></div><div id="craft" class="off"></div>
-<div id="ov"><div><h1 id="ot">ASHFALL CITY</h1><p id="od">Multiplayer PvP looting: raid the ruined skyscrapers for chests (gold blocks), craft weapons, fortify a base and eliminate other survivors. Only 10–15 chests exist at a time (mostly inside buildings) and they relocate with fresh loot every 2 minutes. Click a chest to open it and pick your loot. Find 2 fuel cans and a keycard, reach the rooftop of the Helix Tower (the tall white and orange tower) when the evac helicopter lands, and press F to escape first. A player who dies drops a loot chest with their gear.<br><br><b>WASD</b> move · <b>Space</b> jump · <b>Shift</b> sprint<br><b>Left click</b> break / attack / loot · <b>Right click</b> place<br><b>1-7</b> or wheel: select block · <b>E</b> inventory &amp; crafting · <b>H</b> eat · <b>F</b> board helicopter<br>Open this page together with friends to play in the same world.</p><button id="go">Play</button></div></div>
+<div id="ov"><div><h1 id="ot">ASHFALL CITY</h1><p id="od">Multiplayer PvP looting: raid the ruined skyscrapers for chests (gold blocks), craft weapons, fortify a base and eliminate other survivors. Only 10–15 chests exist at a time (mostly inside buildings) and they relocate with fresh loot every 2 minutes. Click a chest to open it and pick your loot. Find 2 fuel cans and a keycard, reach the rooftop of the Helix Tower (the tall white and orange tower) when the evac helicopter lands, and press F to escape first. A player who dies drops a loot chest with their gear.<br><br><b>WASD</b> move · <b>Space</b> jump · <b>Shift</b> sprint<br><b>Left click</b> break / attack / loot · <b>Right click</b> place<br><b>1-7</b> or wheel: select block · <b>E</b> inventory &amp; crafting · <b>H</b> eat · <b>G</b> medkit · <b>F</b> board helicopter<br>Craft a Workbench, then use it to build a Forge, Chem Table and Radio Bench. Stand near a station to unlock its recipes. Find blueprints in chests to unlock better weapons, a shield and mining tools (Scrap, Reinforced and Military tiers). Hold left click to break blocks (takes time); build spike barricades, alarm wires and shock fences to defend your base.<br>Open this page together with friends to play in the same world.</p><button id="go">Play</button></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const T=THREE,W=120,D=120,H=48,B=new Uint8Array(W*D*H);
 const get=(x,y,z)=>x<0||z<0||x>=W||z>=D||y<0?1:y>=H?0:B[x+W*(z+D*y)];
-let dirty=1,NET=0,RX=0,bc=()=>{};const set=(x,y,z,v)=>{if(x<0||z<0||x>=W||z>=D||y<0||y>=H)return;B[x+W*(z+D*y)]=v;dirty=1;if(NET&&!RX)bc(x,y,z,v)};
+let dirty=1,NET=0,RX=0,MY=new Set,bc=()=>{};const set=(x,y,z,v)=>{if(x<0||z<0||x>=W||z>=D||y<0||y>=H)return;B[x+W*(z+D*y)]=v;dirty=1;if(!RX&&v==19)MY.add(x+W*(z+D*y));if(NET&&!RX)bc(x,y,z,v)};
 let sd=11;const R=()=>(sd=(sd*1664525+1013904223)>>>0)/4294967296,ri=n=>R()*n|0;
 function tower(x0,z0){const xa=x0+1,xb=x0+14,za=z0+1,zb=z0+14,N=10,m=xa+xb>>1;
  for(let x=xa-1;x<=xb+1;x++)for(let z=za-1;z<=zb+1;z++)set(x,0,z,(x==xa-1||x==xb+1||z==za-1||z==zb+1)?13:2);
@@ -73,9 +73,9 @@ function resize(){rd.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/inner
 const cv=document.createElement('canvas');cv.width=cv.height=16;const cx2=cv.getContext('2d');
 for(let x=0;x<16;x++)for(let y=0;y<16;y++){let v=215+ri(40);if(x==0||y==0)v-=45;cx2.fillStyle=`rgb(${v},${v},${v})`;cx2.fillRect(x,y,1,1)}
 const tex=new T.CanvasTexture(cv);tex.magFilter=tex.minFilter=T.NearestFilter;
-const COL=[0,0x3a3d44,0x9a9ca3,0xa4553f,0xb98b52,0x6f8fa8,0x8fd3e8,0x7a6a4f,0xf0b82b,0xffe9a0,0x5f8a47,0xc03030,0xe6f7ff,0xff7a1a];
-const SP=[],NAMES=['','Asphalt','Concrete','Brick','Wood Planks','Metal Plate','Glass','Rubble','Loot Chest','Lamp','Grass','Zombie Spawner','Helix Hull','Beacon Panel'],CV=[],TX=[],ICO={};
-for(let t=1;t<=13;t++){const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');
+const COL=[0,0x3a3d44,0x9a9ca3,0xa4553f,0xb98b52,0x6f8fa8,0x8fd3e8,0x7a6a4f,0xf0b82b,0xffe9a0,0x5f8a47,0xc03030,0xe6f7ff,0xff7a1a,0xc08a4a,0x6b6e75,0x3fbf7f,0x3b6fd4,0x8a8f98,0xd63a3a,0xffd84a];
+const SP=[],NAMES=['','Asphalt','Concrete','Brick','Wood Planks','Metal Plate','Glass','Rubble','Loot Chest','Lamp','Grass','Zombie Spawner','Helix Hull','Beacon Panel','Workbench','Forge','Chem Table','Radio Bench','Spike Barricade','Alarm Wire','Shock Fence'],CV=[],TX=[],ICO={};
+for(let t=1;t<=20;t++){const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');
  for(let x=0;x<16;x++)for(let y=0;y<16;y++){let v=225+ri(30);const ed=x<1||y<1||x>14||y>14;
   if(t==3&&(y%4==3||(x+(y>>2)%2*4)%8==7))v=150;
   if(t==4&&(y%4==3||(x*5+y*3)%13==0))v=165;
@@ -88,35 +88,37 @@ for(let t=1;t<=13;t++){const c=document.createElement('canvas');c.width=c.height
   if(t==9)v=(x>2&&x<13&&y>2&&y<13)?255:180;
   if(t==10)v=ri(10)<3?170:215+ri(40);
   if(t==11)v=(x%5==2||y%5==2)?60:215;
-  if(t==12)v=(y%8<2||x%8==0)?190:245;if(t==13)v=(x+y)%8<4?255:170;if(t!=6&&(x==0||y==0))v-=25;
+  if(t==14)v=(y%5==4||x==2||x==13)?150:235;if(t==15)v=(x>3&&x<12&&y>5&&y<12)?255:(ed?90:150);if(t==16)v=((x*3+y*5)%7==0)?110:235;if(t==17){const d=Math.hypot(x-7.5,y-7.5);v=(d>2.5&&d<4.5)?100:(x==2||x==13)?160:235}
+if(t==18)v=((x%4==1||x%4==2)&&y%8>2)?80:220;if(t==19)v=(y==7||y==8)?255:150;if(t==20)v=(x%4==0||y%4==0)?90:250;
+if(t==12)v=(y%8<2||x%8==0)?190:245;if(t==13)v=(x+y)%8<4?255:170;if(t!=6&&(x==0||y==0))v-=25;
   g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(x,y,1,1)}
  CV[t]=c;const tx=new T.CanvasTexture(c);tx.magFilter=tx.minFilter=T.NearestFilter;TX[t]=tx}
 const icon=t=>ICO[t]||(ICO[t]=(()=>{const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');g.drawImage(CV[t],0,0);g.globalCompositeOperation='multiply';g.fillStyle='#'+COL[t].toString(16).padStart(6,'0');g.fillRect(0,0,16,16);return c.toDataURL()})());
 const CP=t=>t==2||t==10||t==1?50000:16000,CAP=30000,geo=new T.BoxGeometry(1,1,1),M=[];
-for(let t=1;t<=13;t++){const o={map:TX[t]};if(t==6){o.transparent=true;o.opacity=.5;o.depthWrite=false}
- if(t==9){o.emissive=0xffd166;o.emissiveIntensity=.7}if(t==8){o.emissive=0x663c00}if(t==11){o.emissive=0x8a0000;o.emissiveIntensity=.8}if(t==13){o.emissive=0xff6a00;o.emissiveIntensity=.9}
+for(let t=1;t<=20;t++){const o={map:TX[t]};if(t==6){o.transparent=true;o.opacity=.5;o.depthWrite=false}
+ if(t==9){o.emissive=0xffd166;o.emissiveIntensity=.7}if(t==8){o.emissive=0x663c00}if(t==11){o.emissive=0x8a0000;o.emissiveIntensity=.8}if(t==13){o.emissive=0xff6a00;o.emissiveIntensity=.9}if(t==15){o.emissive=0xff4400;o.emissiveIntensity=.5}if(t==19){o.emissive=0xff0000;o.emissiveIntensity=.4}if(t==20){o.emissive=0xffcc00;o.emissiveIntensity=.6}
  const m=new T.InstancedMesh(geo,new T.MeshLambertMaterial(o),CP(t));m.cap=CP(t);m.setColorAt(0,new T.Color());m.frustumCulled=false;m.count=0;sc.add(m);M[t]=m}
 const cc=COL.map(c=>new T.Color(c));
 const op=(x,y,z)=>{const v=get(x,y,z);return v==0||v==6};
-function rebuild(){SP.length=0;const cnt=Array(14).fill(0);
+function rebuild(){SP.length=0;const cnt=Array(21).fill(0);
  for(let y=0;y<H;y++)for(let z=0;z<D;z++)for(let x=0;x<W;x++){const t=B[x+W*(z+D*y)];if(!t)continue;if(t==11)SP.push([x,y,z]);
   if(!(op(x+1,y,z)||op(x-1,y,z)||op(x,y+1,z)||op(x,y-1,z)||op(x,y,z+1)||op(x,y,z-1)))continue;
   const c=cnt[t]++;if(c>=M[t].cap)continue;const m=M[t],a=m.instanceMatrix.array,k=c*16;
   a[k]=a[k+5]=a[k+10]=a[k+15]=1;a[k+12]=x+.5;a[k+13]=y+.5;a[k+14]=z+.5;
   const sh=.8+.2*(((x*73856093^y*19349663^z*83492791)>>>0)%100/100),q=m.instanceColor.array,j=c*3,b=cc[t];
   q[j]=b.r*sh;q[j+1]=b.g*sh;q[j+2]=b.b*sh}
- for(let t=1;t<=13;t++){const m=M[t];m.count=Math.min(cnt[t],m.cap);m.instanceMatrix.needsUpdate=m.instanceColor.needsUpdate=true}dirty=0}
+ for(let t=1;t<=20;t++){const m=M[t];m.count=Math.min(cnt[t],m.cap);m.instanceMatrix.needsUpdate=m.instanceColor.needsUpdate=true}dirty=0}
 const hl=new T.LineSegments(new T.EdgesGeometry(new T.BoxGeometry(1.01,1.01,1.01)),new T.LineBasicMaterial({color:0xffffff}));hl.visible=false;sc.add(hl);
 // ---- state
 const P={x:42.5,y:1,z:42.5,vx:0,vy:0,vz:0,yaw:0,pitch:0,hp:100,g:0},keys={};
-const inv={b:{2:12,4:12},r:{scrap:0,wood:0,metal:0,food:1,battery:0,fuel:0,keycard:0},wp:['Fists'],eq:'Fists'},WD={Fists:1,Bat:3,Machete:6};
+const inv={b:{2:12,4:12},r:{scrap:0,wood:0,metal:0,food:1,battery:0,fuel:0,keycard:0,medkit:0},wp:['Fists'],eq:'Fists'},WD={Fists:1,Bat:3,Machete:6,'Fire Axe':8,Spear:6,'Reinforced Bat':9,'Military Blade':12};
 let sw=0;const hand=new T.Group();cam.add(hand);sc.add(cam);
 const give=n=>{if(!inv.wp.includes(n))inv.wp.push(n);inv.eq=n;setHand()};
 function setHand(){while(hand.children.length)hand.remove(hand.children[0]);
  const bx=(w,h,d,c,x,y,z)=>{const o=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshLambertMaterial({color:c,depthTest:false}));o.position.set(x,y,z);o.renderOrder=999;hand.add(o)};
  bx(.12,.12,.45,0xe0ac82,0,0,0);
  if(inv.eq=='Bat')bx(.07,.07,.55,0xb98b52,0,.08,-.45);
- if(inv.eq=='Machete'){bx(.06,.06,.15,0x5a3b1e,0,.08,-.3);bx(.03,.1,.55,0xcfd8dc,0,.14,-.62)}
+ if(inv.eq=='Spear'){bx(.05,.05,1,0xb98b52,0,.08,-.6);bx(.07,.07,.2,0xcfd8dc,0,.08,-1.15)}if(inv.eq=='Reinforced Bat'){bx(.09,.09,.6,0x8a5a2a,0,.08,-.45);bx(.11,.11,.08,0x9aa5b1,0,.08,-.3);bx(.11,.11,.08,0x9aa5b1,0,.08,-.6)}if(inv.eq=='Military Blade'){bx(.07,.07,.2,0x222222,0,.08,-.3);bx(.04,.14,.8,0x2b2f36,0,.16,-.8);bx(.05,.03,.8,0xff7a1a,0,.24,-.8)}if(inv.eq=='Fire Axe'){bx(.06,.06,.6,0x7a2a1a,0,.08,-.4);bx(.04,.28,.3,0xcfd8dc,0,.2,-.62)}if(inv.eq=='Machete'){bx(.06,.06,.15,0x5a3b1e,0,.08,-.3);bx(.03,.1,.55,0xcfd8dc,0,.14,-.62)}
  hand.position.set(.38,-.32,-.55);hand.rotation.set(.3,-.2,0)}
 setHand();
 const HB=[2,3,4,5,6,9,7];let sel=0,alive=1,craftOpen=0,locked=0,kills=0,mL=0,mR=0,cd=0,time=240*.2,spT=0,days=1;
@@ -135,9 +137,19 @@ const RC=[
  ['Planks ×4',{wood:2},()=>inv.b[4]+=4],['Metal plates ×4',{metal:2},()=>inv.b[5]+=4],['Brick ×4',{scrap:2},()=>inv.b[3]+=4],
  ['Concrete ×4',{scrap:1,wood:1},()=>inv.b[2]+=4],['Glass ×2',{scrap:2},()=>inv.b[6]+=2],['Lamp ×2',{battery:1,scrap:1},()=>inv.b[9]+=2],
  ['Baseball bat (dmg 3)',{wood:3,scrap:1},()=>give('Bat')],['Machete (dmg 6)',{metal:3,wood:1},()=>give('Machete')]];
-function craftUI(){$('craft').innerHTML='<h3 style="margin:0 0 6px">Inventory <small>(E to close · click a block to put it in the selected hotbar slot)</small></h3><div class="g">'+Object.keys(inv.b).filter(t=>inv.b[t]>0).map(t=>`<div class="it" data-b="${t}"><img src="${icon(+t)}"><br>${NAMES[t]}<br>×${inv.b[t]}</div>`).join('')+Object.entries(inv.r).map(e=>`<div class="it">${{fuel:'⛽',keycard:'🔑',scrap:'🔩',wood:'🪵',metal:'⚙️',food:'🍖',battery:'🔋'}[e[0]]}<br>${e[0]}<br>×${e[1]}</div>`).join('')+inv.wp.map(w=>`<div class="it${w==inv.eq?' on':''}" data-w="${w}">🗡️<br>${w}<br>dmg ${WD[w]}</div>`).join('')+'</div><h3 style="margin:10px 0 0">Crafting</h3>'+RC.map((r,i)=>{
- const ok=Object.keys(r[1]).every(k=>inv.r[k]>=r[1][k]);
- return `<div class="rc"><span>${r[0]}<br><small>${Object.entries(r[1]).map(e=>e[1]+' '+e[0]).join(', ')}</small></span><button data-i="${i}" ${ok?'':'disabled'}>Craft</button></div>`}).join('');
+function nearSt(){const s=new Set,x0=Math.floor(P.x),y0=Math.floor(P.y),z0=Math.floor(P.z);for(let x=x0-4;x<=x0+4;x++)for(let y=y0-2;y<=y0+3;y++)for(let z=z0-4;z<=z0+4;z++){const b=get(x,y,z);if(b>=14&&b<=17)s.add(b)}return s}
+const ab=(t,n)=>()=>{inv.b[t]=(inv.b[t]|0)+n;if(t>13)HB[sel]=t};
+RC.length=0;RC.push(
+['Planks ×4',{wood:2},ab(4,4),0],['Concrete ×4',{scrap:1,wood:1},ab(2,4),0],['Brick ×4',{scrap:2},ab(3,4),0],['Glass ×2',{scrap:2},ab(6,2),0],
+['Workbench',{wood:6,scrap:2},ab(14,1),0],
+['Metal plates ×4',{metal:2},ab(5,4),14],['Lamp ×2',{battery:1,scrap:1},ab(9,2),14],['Baseball bat (dmg 3)',{wood:3,scrap:1},()=>give('Bat'),14],
+['Forge',{scrap:6,metal:3},ab(15,1),14],['Chem Table',{metal:4,battery:2,scrap:2},ab(16,1),14],['Radio Bench',{metal:5,battery:3},ab(17,1),14],
+['Machete (dmg 6)',{metal:3,wood:1},()=>give('Machete'),15],['Fire Axe (dmg 8)',{metal:5,wood:2,scrap:2},()=>give('Fire Axe'),15],
+['Medkit (G: +60 HP)',{food:2,scrap:1},()=>inv.r.medkit++,16],['Fuel Can',{scrap:3,battery:2},()=>inv.r.fuel++,16],
+['Keycard',{metal:5,battery:3,scrap:2},()=>inv.r.keycard++,17],['Spike Barricade ×2',{wood:2,metal:2},ab(18,2),15],['Alarm Wire',{battery:1,metal:1,scrap:1},ab(19,1),17],['Shock Fence ×2',{metal:3,battery:2},ab(20,2),16],['Spear (Scrap tier, dmg 6)',{wood:3,metal:1},()=>give('Spear'),14,'Spear'],['Reinforced Bat (dmg 9)',{wood:3,metal:3,scrap:2},()=>give('Reinforced Bat'),15,'Reinforced Bat'],['Military Blade (dmg 12)',{metal:8,battery:2,scrap:4},()=>give('Military Blade'),15,'Military Blade'],['Riot Shield (-40% damage taken)',{metal:4,wood:2},()=>{inv.sh=1;toast('Shield equipped')},14,'Riot Shield'],['Pickaxe (mining x2.2)',{wood:2,metal:3},()=>{inv.tl='Pickaxe'},14,'Pickaxe'],['Power Drill (mining x4)',{metal:4,battery:3,scrap:2},()=>{inv.tl='Power Drill'},16,'Power Drill']);
+function craftUI(){const NS=nearSt();$('craft').innerHTML='<h3 style="margin:0 0 6px">Inventory <small>(E to close · click a block to put it in the selected hotbar slot)</small></h3><div class="g">'+Object.keys(inv.b).filter(t=>inv.b[t]>0).map(t=>`<div class="it" data-b="${t}"><img src="${icon(+t)}"><br>${NAMES[t]}<br>×${inv.b[t]}</div>`).join('')+Object.entries(inv.r).map(e=>`<div class="it">${{medkit:'💊',fuel:'⛽',keycard:'🔑',scrap:'🔩',wood:'🪵',metal:'⚙️',food:'🍖',battery:'🔋'}[e[0]]}<br>${e[0]}<br>×${e[1]}</div>`).join('')+inv.wp.map(w=>`<div class="it${w==inv.eq?' on':''}" data-w="${w}">🗡️<br>${w}<br>dmg ${WD[w]} · ${TR[w]||'Basic'}</div>`).join('')+[...inv.bp].map(b=>`<div class="it">📜<br>${b}</div>`).join('')+'</div><h3 style="margin:10px 0 0">Crafting</h3>'+RC.map((r,i)=>{
+ const st=!r[3]||NS.has(r[3]),bk=!r[4]||inv.bp.has(r[4]),ok=st&&bk&&Object.keys(r[1]).every(k=>inv.r[k]>=r[1][k]);
+ return `<div class="rc"><span>${r[0]}<br><small>${Object.entries(r[1]).map(e=>e[1]+' '+e[0]).join(', ')}${r[3]?' · at '+NAMES[r[3]]+(st?'':' (not nearby)'):''}${bk?'':' · 🔒 blueprint: '+r[4]}</small></span><button data-i="${i}" ${ok?'':'disabled'}>Craft</button></div>`}).join('');
  $('craft').querySelectorAll('.it').forEach(e=>e.onclick=()=>{if(e.dataset.b)HB[sel]=+e.dataset.b;if(e.dataset.w){inv.eq=e.dataset.w;setHand()}craftUI();ui()});$('craft').querySelectorAll('button').forEach(b=>b.onclick=()=>{const r=RC[b.dataset.i];for(const k in r[1])inv.r[k]-=r[1][k];r[2]();craftUI();ui()})}
 function toggleCraft(){if(!alive)return;craftOpen=!craftOpen;$('craft').classList.toggle('off',!craftOpen);
  if(craftOpen){CK=null;craftUI();document.exitPointerLock()}else{CK=null;rd.domElement.requestPointerLock()}}
@@ -173,10 +185,10 @@ function act(right){if(cd>0||craftOpen)return;const r=ray(),d=dirv();
   if(t<0||t>zd)continue;if(Math.hypot(dx-d.x*t,dy-d.y*t,dz-d.z*t)<.75){zt=z;zd=t}}
  if(zt&&(!r||zd<r.d)){sw=1;atk++;hitP(zt);zt.hp=99;zt.kx=d.x*7;zt.kz=d.z*7;zt.vy=4;cd=.4;
   if(zt.hp<=0){rmZ(zt);kills++;if(Math.random()<.4){inv.r.scrap++;toast('+1 scrap')}ui()}return}
- if(r){const[x,y,z]=r.h,b=get(x,y,z);if(b==8){openChest(x,y,z)}else if(y>0&&b<12){set(x,y,z,0);if(b==11)toast('Spawner destroyed!');else inv.b[b]=(inv.b[b]|0)+1;ui()}}sw=1;cd=.2}
+ if(r){const[x,y,z]=r.h,b=get(x,y,z);if(b==8){openChest(x,y,z)}else if(0){set(x,y,z,0);if(b==11)toast('Spawner destroyed!');else inv.b[b]=(inv.b[b]|0)+1;ui()}}sw=1;cd=.2}
 // ---- input
 addEventListener('keydown',e=>{keys[e.code]=1;if(e.code=='KeyC'||e.code=='KeyE')toggleCraft();
- if(e.code=='KeyF')board();if(e.code=='KeyH'&&inv.r.food>0&&P.hp<100){inv.r.food--;P.hp=Math.min(100,P.hp+25);ui()}
+ if(e.code=='KeyF')board();if(e.code=='KeyG'&&inv.r.medkit>0&&P.hp<100){inv.r.medkit--;P.hp=Math.min(100,P.hp+60);ui()}if(e.code=='KeyH'&&inv.r.food>0&&P.hp<100){inv.r.food--;P.hp=Math.min(100,P.hp+25);ui()}
  const n=parseInt(e.key);if(n>=1&&n<=7){sel=n-1;ui()}});
 addEventListener('keyup',e=>keys[e.code]=0);
 addEventListener('wheel',e=>{sel=(sel+(e.deltaY>0?1:6))%7;ui()});
@@ -206,11 +218,11 @@ function updRP(dt){for(const id in RP){const r=RP[id],k=Math.min(1,dt*12),ox=r.x
  let dy=r.tyaw-r.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));r.yaw+=dy*k;const spd=Math.hypot(r.x-ox,r.z-oz)/Math.max(dt,.001),s=Math.min(1,spd/3);r.ph+=dt*Math.min(spd,8)*1.6;
  r.m.visible=r.hp>0;r.m.position.set(r.x,r.y+Math.abs(Math.sin(r.ph))*.05*s,r.z);r.m.rotation.y=r.yaw;
  r.ll.rotation.x=Math.sin(r.ph)*.8*s;r.lr.rotation.x=-r.ll.rotation.x;r.al.rotation.x=-r.ll.rotation.x*.9;r.sw2=Math.max(0,r.sw2-dt*3.5);r.ar.rotation.x=r.sw2>0?-Math.sin((1-r.sw2)*3.14)*1.8:r.ll.rotation.x*.9}}
-const clean=r=>{const o={};for(const n of['scrap','wood','metal','food','battery','fuel','keycard'])o[n]=Math.min(50,Math.max(0,+r[n]||0));if(['Bat','Machete'].includes(r.w))o.w=r.w;return o};
-function hitP(r){room&&room.emit('hit',{to:r.id,d:WD[inv.eq]*4}).catch(()=>{})}
+const clean=r=>{const o={};for(const n of['scrap','wood','metal','food','battery','fuel','keycard','medkit'])o[n]=Math.min(50,Math.max(0,+r[n]||0));if(Object.keys(WD).includes(r.w)&&r.w!='Fists')o.w=r.w;if(BPL.includes(r.bp))o.bp=r.bp;return o};
+function hitP(r){room&&room.emit('hit',{to:r.id,d:WD[inv.eq]*3}).catch(()=>{})}
 function lootAt(x,y,z){const k=x+W*(z+D*y),r=LC[k];delete LC[k];if(!r)return loot();const g=[];for(const n in inv.r){const v=r[n]|0;if(v>0){inv.r[n]+=v;g.push('+'+v+' '+n)}}if(r.w){give(r.w);g.push(r.w)}toast('Looted: '+(g.join(', ')||'nothing'))}
 function deathDrop(){const x=Math.floor(P.x),y=Math.floor(P.y+.1),z=Math.floor(P.z),r={...inv.r};const w=inv.wp[inv.wp.length-1];if(w!='Fists')r.w=w;
- inv.r={scrap:0,wood:0,metal:0,food:0,battery:0,fuel:0,keycard:0};inv.wp=['Fists'];inv.eq='Fists';setHand();if(!get(x,y,z)){LC[x+W*(z+D*y)]=r;set(x,y,z,8)}
+ inv.r={scrap:0,wood:0,metal:0,food:0,battery:0,fuel:0,keycard:0,medkit:0};inv.wp=['Fists'];inv.eq='Fists';inv.sh=0;inv.tl=0;setHand();if(!get(x,y,z)){LC[x+W*(z+D*y)]=r;set(x,y,z,8)}
  room&&room.emit('kill',{by:lastHit||'',vn:NM}).catch(()=>{})}
 function syncPeers(ch){for(const p of ch.peers){if(p.isMe||p.kind!='viewer')continue;const s=p.presence;if(typeof s.x!='number'||typeof s.y!='number'||typeof s.z!='number')continue;let r=RP[p.peer];
   if(!r){r=RP[p.peer]=mkP(+s.col||0xe63946,String(s.nm||'Player').slice(0,20));r.id=p.peer;r.x=s.x;r.y=s.y;r.z=s.z;r.at=s.at}
@@ -233,7 +245,8 @@ heli.visible=false;heli.position.set(LZ.x,120,LZ.z);sc.add(heli);let hy=120;
 const beam=new T.Mesh(new T.BoxGeometry(.6,60,.6),new T.MeshBasicMaterial({color:0xff7a00,transparent:true,opacity:.35,fog:false}));beam.position.set(LZ.x,70,LZ.z);beam.visible=false;sc.add(beam);
 function updHeli(dt){const p=evP();let ty=120;if(p.s==1)ty=42.3;else if(p.s==0&&p.t>225000)ty=42.3+(240000-p.t)/15000*45;
  hy+=(ty-hy)*Math.min(1,dt*1.5);heli.visible=hy<100;heli.position.y=hy;rot.rotation.y+=dt*35;beam.visible=p.s==1||(p.s==0&&p.t>200000)}
-const genLoot=r=>{const o={scrap:2+(r()*5|0),wood:1+(r()*5|0),metal:r()*4|0,food:r()*3|0,battery:r()*2.3|0,fuel:r()<.22?1:0,keycard:r()<.15?1:0};if(r()<.25)o.w=r()<.4?'Machete':'Bat';return o};
+let mk='',mp=0,trapT=0,alT=0,alLast=0;const BPL=['Spear','Reinforced Bat','Military Blade','Riot Shield','Pickaxe','Power Drill'],TM={'Pickaxe':2.2,'Power Drill':4},TR={Bat:'Scrap',Spear:'Scrap',Machete:'Reinforced','Fire Axe':'Reinforced','Reinforced Bat':'Reinforced','Military Blade':'Military'};inv.bp=new Set;const learn=n=>{inv.bp.add(n);toast('📜 Blueprint learned: '+n)};const BT=[0,1.2,1,1,.5,1.6,.2,.3,0,.3,.3,.5,0,0,1,1.2,1,1,.6,.4,1.2];
+const genLoot=r=>{const o={scrap:2+(r()*5|0),wood:1+(r()*5|0),metal:r()*4|0,food:r()*3|0,battery:r()*2.3|0,fuel:r()<.22?1:0,keycard:r()<.15?1:0};if(r()<.25)o.w=r()<.4?'Machete':'Bat';if(r()<.3)o.bp=BPL[r()*BPL.length|0];return o};
 let CK=null,CHK=[],CE=-1;const EPL=120000,CI=[],CO=[];
 const rem=()=>{const s=Math.ceil((EPL-Date.now()%EPL)/1000);return(s/60|0)+':'+String(s%60).padStart(2,'0')};
 const rngE=e=>{let s=(e*2654435761+12345)>>>0;return()=>(s=(s*1664525+1013904223)>>>0)/4294967296};
@@ -242,31 +255,31 @@ function rotate(e){RX=1;for(const k of CHK){if(B[k]==8)set(k%W,k/(W*D)|0,(k/W|0)
  const r=rngE(e),n=23+(r()*11|0),ni=Math.round(n*.75),a=CI.slice(),b=CO.slice();
  for(const[arr,c]of[[a,ni],[b,n-ni]])for(let i=0;i<c&&arr.length;i++){const k=arr.splice(r()*arr.length|0,1)[0],L=genLoot(r);if(B[k]==0){RX=1;set(k%W,k/(W*D)|0,(k/W|0)%D,8);RX=0;LC[k]=L;CHK.push(k)}}}
 function openChest(x,y,z){const k=x+W*(z+D*y);if(!LC[k])LC[k]=genLoot(Math.random);CK=[x,y,z];craftOpen=1;$('craft').classList.remove('off');document.exitPointerLock();chestUI()}
-function chestUI(){const k=CK[0]+W*(CK[2]+D*CK[1]),r=LC[k]||{},ic={fuel:'⛽',keycard:'🔑',scrap:'🔩',wood:'🪵',metal:'⚙️',food:'🍖',battery:'🔋'};
+function chestUI(){const k=CK[0]+W*(CK[2]+D*CK[1]),r=LC[k]||{},ic={medkit:'💊',fuel:'⛽',keycard:'🔑',scrap:'🔩',wood:'🪵',metal:'⚙️',food:'🍖',battery:'🔋'};
  const rows=Object.keys(ic).filter(n=>r[n]>0).map(n=>`<div class="rc"><span>${ic[n]} ${n} ×${r[n]}</span><button data-t="${n}">Take</button></div>`);
- if(r.w)rows.push(`<div class="rc"><span>🗡️ ${r.w}</span><button data-t="w">Take</button></div>`);
+ if(r.bp)rows.push(`<div class="rc"><span>📜 Blueprint: ${r.bp}</span><button data-t="bp">Take</button></div>`);if(r.w)rows.push(`<div class="rc"><span>🗡️ ${r.w}</span><button data-t="w">Take</button></div>`);
  $('craft').innerHTML='<h3 style="margin:0 0 8px">📦 Loot Chest <small>(E to close)</small></h3>'+(rows.join('')||'<p>Empty.</p>')+(rows.length>1?'<div class="rc"><span></span><button data-t="*">Take all</button></div>':'');
  $('craft').querySelectorAll('button').forEach(b=>b.onclick=()=>takeLoot(b.dataset.t))}
 function takeLoot(t){const[x,y,z]=CK,k=x+W*(z+D*y),r=LC[k];if(!r||get(x,y,z)!=8){toast('Chest already looted');return toggleCraft()}
- for(const n of t=='*'?Object.keys(r):[t]){if(n=='w'){if(r.w){give(r.w);delete r.w}}else if(r[n]>0){inv.r[n]+=r[n];delete r[n]}}
- const left=['scrap','wood','metal','food','battery','fuel','keycard'].some(n=>r[n]>0)||r.w;
+ for(const n of t=='*'?Object.keys(r):[t]){if(n=='bp'){if(r.bp){learn(r.bp);delete r.bp}}else if(n=='w'){if(r.w){give(r.w);delete r.w}}else if(r[n]>0){inv.r[n]+=r[n];delete r[n]}}
+ const left=['scrap','wood','metal','food','battery','fuel','keycard','medkit'].some(n=>r[n]>0)||r.w||r.bp;
  if(!left){delete LC[k];set(x,y,z,0);ui();toggleCraft();return}
  bc(x,y,z,8);ui();chestUI()}
 const tick=()=>{evNote();const e=Math.floor(Date.now()/EPL);if(e!=CE){const f=CE<0;CE=e;rotate(e);if(!f)toast('📦 Loot refreshed: chests have moved!')}ui()};tick();setInterval(tick,1000);
 (async()=>{try{room=window.claude?await claude.use('room'):null}catch(e){room=null}if(!room)return;
- room.on('blk',m=>{const d=m.data;if(m.isMe||!d||!Number.isInteger(d.x)||!Number.isInteger(d.y)||!Number.isInteger(d.z)||d.x<0||d.x>=W||d.z<0||d.z>=D||d.y<0||d.y>=H||!(d.v>=0&&d.v<=10))return;
+ room.on('blk',m=>{const d=m.data;if(m.isMe||!d||!Number.isInteger(d.x)||!Number.isInteger(d.y)||!Number.isInteger(d.z)||d.x<0||d.x>=W||d.z<0||d.z>=D||d.y<0||d.y>=H||!(d.v>=0&&d.v<=20))return;
   const k=d.x+W*(d.z+D*d.y);RX=1;set(d.x,d.y,d.z,d.v);RX=0;DF[k]=d.v;if(d.v==8&&d.r&&typeof d.r=='object')LC[k]=clean(d.r);else delete LC[k]});
- room.on('dif',m=>{if(m.isMe||typeof m.data!='string')return;RX=1;for(const s of m.data.split(',')){const[i,v]=s.split(':').map(Number);if(i>=0&&i<W*D*H&&v>=0&&v<=10){set(i%W,i/(W*D)|0,(i/W|0)%D,v);DF[i]=v}}RX=0});
- room.on('hit',m=>{const d=m.data;if(!d||m.isMe||d.to!==myId()||!alive)return;P.hp-=Math.min(30,+d.d||0);lastHit=m.peer;$('dmg').style.opacity=1;setTimeout(()=>$('dmg').style.opacity=0,200);ui();if(P.hp<=0){P.hp=0;die()}});
+ room.on('dif',m=>{if(m.isMe||typeof m.data!='string')return;RX=1;for(const s of m.data.split(',')){const[i,v]=s.split(':').map(Number);if(i>=0&&i<W*D*H&&v>=0&&v<=20){set(i%W,i/(W*D)|0,(i/W|0)%D,v);DF[i]=v}}RX=0});
+ room.on('hit',m=>{const d=m.data;if(!d||m.isMe||d.to!==myId()||!alive)return;P.hp-=Math.min(40,+d.d||0)*(inv.sh?.6:1);lastHit=m.peer;$('dmg').style.opacity=1;setTimeout(()=>$('dmg').style.opacity=0,200);ui();if(P.hp<=0){P.hp=0;die()}});
  room.on('kill',m=>{const d=m.data||{};toast('💀 '+String(d.vn||'A survivor').slice(0,24)+' was eliminated');if(d.by&&d.by===myId()){kills++;ui()}});
- room.on('evac',m=>{const p=evP();evDone=p.c;toast('🚁 '+String((m.data||{}).nm||'A survivor').slice(0,24)+' escaped the city!')});room.onPeers(syncPeers);
+ room.on('alm',m=>{const d=m.data;if(m.isMe||!d||!Number.isFinite(d.x)||!Number.isFinite(d.z))return;if(Math.hypot(P.x-d.x,P.z-d.z)<50)toast('🔔 Alarm tripped near ('+(d.x|0)+', '+(d.z|0)+')')});room.on('evac',m=>{const p=evP();evDone=p.c;toast('🚁 '+String((m.data||{}).nm||'A survivor').slice(0,24)+' escaped the city!')});room.onPeers(syncPeers);
  bc=(x,y,z,v)=>{const k=x+W*(z+D*y),o={x,y,z,v};DF[k]=v;if(v==8&&LC[k])o.r=LC[k];room.emit('blk',o).catch(()=>{})};
  setInterval(()=>{room.presence({x:+P.x.toFixed(2),y:+P.y.toFixed(2),z:+P.z.toFixed(2),yaw:+P.yaw.toFixed(2),hp:alive?P.hp|0:0,nm:NM,col:PC,at:atk}).catch(()=>{})},100);NET=1})();
 spawnPos();
 let last=performance.now();ui();
 function update(dt){
  time+=dt;const ph=(time/240)%1,k=Math.max(0,Math.min(1,(Math.sin(ph*6.283)+.2)/.5)),nn=k<.35;
- if(nn&&!nightNow){toast('Night falls… zombies are swarming')}if(!nn&&nightNow)days++;
+ if(nn&&!nightNow){0&&toast('Night falls… zombies are swarming')}if(!nn&&nightNow)days++;
  if(nn!==nightNow){nightNow=nn;ui()}
  sk.copy(nightC).lerp(dayC,k);sc.background=sk;sc.fog.color.copy(sk);amb.intensity=.4+.5*k;sun.intensity=.1+.7*k;
  const f=(keys.KeyW?1:0)-(keys.KeyS?1:0),r=(keys.KeyD?1:0)-(keys.KeyA?1:0),sp=keys.ShiftLeft?7.5:5,sy=Math.sin(P.yaw),cy=Math.cos(P.yaw);
@@ -289,6 +302,12 @@ function update(dt){
  const rr=ray();hl.visible=!!rr;if(rr)hl.position.set(rr.h[0]+.5,rr.h[1]+.5,rr.h[2]+.5);
  $('tip').textContent=(rr?NAMES[get(rr.h[0],rr.h[1],rr.h[2])]+'  |  ':'')+'Holding: '+NAMES[HB[sel]]+' ('+(inv.b[HB[sel]]|0)+')'+evHint();
  sw=Math.max(0,sw-dt*3.5);const sv=sw>0?Math.sin((1-sw)*3.14):0,mg=(P.vx||P.vz)&&P.g?1:0;hand.rotation.x=.3-sv*1.1;hand.position.z=-.55-sv*.15;hand.position.y=-.32+Math.sin(time*10)*.015*mg;
+ let mn=0,pc='+';if(mL&&rr&&!craftOpen){const[x,y,z]=rr.h,b=get(x,y,z);if(b!=8&&y>0&&(b<12||b>13)){const k=x+','+y+','+z;if(mk!=k){mk=k;mp=0}mp+=dt*(1+WD[inv.eq]/8)*(TM[inv.tl]||1);mn=1;pc=Math.min(99,mp/BT[b]*100|0)+'%';if(mp>=BT[b]){mp=0;mk='';set(x,y,z,0);inv.b[b]=(inv.b[b]|0)+1;ui()}}}
+ if(!mn){mk='';mp=0}if($('cross').textContent!=pc)$('cross').textContent=pc;
+ trapT-=dt;if(trapT<=0){let dm=0;for(let x=Math.floor(P.x-.45);x<=Math.floor(P.x+.45);x++)for(let z=Math.floor(P.z-.45);z<=Math.floor(P.z+.45);z++)for(let y=Math.floor(P.y-.1);y<=Math.floor(P.y+1.7);y++){const b=get(x,y,z);if(b==18)dm=Math.max(dm,10);if(b==20)dm=Math.max(dm,20)}
+  if(dm){P.hp-=dm;trapT=.6;$('dmg').style.opacity=1;setTimeout(()=>$('dmg').style.opacity=0,200);ui()}else trapT=0}
+ alT-=dt;if(alT<=0&&room){alT=.5;let hit=null;for(let x=Math.floor(P.x)-3;x<=Math.floor(P.x)+3&&!hit;x++)for(let z=Math.floor(P.z)-3;z<=Math.floor(P.z)+3&&!hit;z++)for(let y=Math.floor(P.y)-1;y<=Math.floor(P.y)+2;y++)if(get(x,y,z)==19&&!MY.has(x+W*(z+D*y))){hit=[x,z];break}
+  if(hit&&Date.now()-alLast>15000){alLast=Date.now();toast('🔔 You tripped an alarm!');room.emit('alm',{x:hit[0],z:hit[1],nm:NM}).catch(()=>{})}}
  if(Math.random()<.03){P.hp=Math.min(100,P.hp+.5);$('hpb').style.width=P.hp+'%'}}
 function loop(now){requestAnimationFrame(loop);const dt=Math.min((now-last)/1000,.05);last=now;updHeli(dt);if(alive&&(locked||craftOpen))update(dt);else{updRP(dt);if(dirty)rebuild()}rd.render(sc,cam)}
 rebuild();requestAnimationFrame(loop);
