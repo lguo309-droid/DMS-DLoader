@@ -45,7 +45,7 @@ kbd{background:var(--chip);border:1px solid rgba(128,128,128,.4);border-radius:5
 <div id="prompt"></div>
 <div id="hotbar"></div>
 <div id="side"></div>
-<div id="inv"><h2>Inventory</h2><h3>Hotbar</h3><div id="invhot"></div><h3>Items</h3><div id="slots"></div><h3>Crafting (by hand)</h3><div id="craft"></div><p>E close · Q drop a stick · 1-4 craft<br>Click a hotbar slot, then an item to equip it</p></div>
+<div id="inv"><h2>Inventory</h2><h3>Hotbar</h3><div id="invhot"></div><h3>Items</h3><div id="slots"></div><h3>Crafting (by hand)</h3><div id="craft"></div><p>E close · Q drop held item (Shift: whole stack) · 1-4 craft<br>Click a hotbar slot, then an item to equip it</p></div>
 <div id="hud">Standing · Alt 0.0 m</div>
 <div id="overlay"><div id="card">
 <h1>🌴 Wild Island</h1>
@@ -262,6 +262,7 @@ function mk(t){
   else if(t==='coconut')add(aSph,cocoMat,0,.12,0,.13,.13,.13);
   else if(t==='coal')add(stGeo,coalMat,0,.07,0,.8,.6,.8);
   else if(t==='meat')add(bxG,meatMat,0,.07,0,.32,.14,.22);
+  else if(t!=='sharpstone')add(bxG,new THREE.MeshStandardMaterial({color:GC[t]||0xc9a46a,roughness:.7}),0,.1,0,.28,.2,.28);
   else add(stGeo,spMat,0,.08,0,.7,1.1,.7);
   g.userData.t=t;return g;
 }
@@ -601,6 +602,16 @@ function makeDen(sp){
   const d={x,z,dx:x+fx*3.4,dz:z+fz*3.4};dens.push(d);spawnBear(d);
 }
 for(let i=0;i<2;i++){const sp=findSpot([60,75,50,90,105],[E,...dens]);if(sp)makeDen(sp)}
+// ---------- Q: drop the held hotbar item ----------
+const GC={knife:0xb7c4cf,axe:0x8a6a48,pickaxe:0x77736b,cooked:0x9a5a2a,bottle:0x9bd0e8,sea:0x2a82ad,dwater:0x7fd4ff,salve:0x6fbf5a,coconutdrink:0xf4efe0};
+function dropHeld(){
+  const it=slotItem(hot.sel);if(!it)return;
+  if(PL.includes(it)){toastMsg='Place it with G instead';toastT=1;return}
+  const n=keys.ShiftLeft||keys.ShiftRight?Math.min(inv[it],20):1,gx=P.x-Math.sin(P.yaw)*1.5,gz=P.z-Math.cos(P.yaw)*1.5;
+  if(H(gx,gz)<-.1){toastMsg='Cannot drop in water';toastT=1;return}
+  for(let i=0;i<n;i++){const x=gx+rr(-.4,.4),z=gz+rr(-.4,.4),m=mk(it);m.position.set(x,H(x,z),z);m.rotation.y=rnd()*6.28;scene.add(m);sticks.push(m)}
+  inv[it]-=n;toastMsg='Dropped '+NM[it][1]+(n>1?' x'+n:'');toastT=.8;renderInv();
+}
 function hotTick(){
   const w0=slotItem(0);hand.visible=hot.sel===0&&!!w0&&!invEl.classList.contains('open');hb1.visible=hb2.visible=w0==='knife';hax1.visible=w0==='axe'||w0==='pickaxe'||w0==='torch';hfl.visible=w0==='torch';hax2.visible=w0==='axe';hpk.visible=w0==='pickaxe';
   const now=performance.now(),sp=(now-swingT)/swingDur;let a=0;
@@ -644,7 +655,7 @@ function pickup(){
   inv[ty]++;renderInv();toastMsg='Picked up '+NM[ty][1]+' (x'+inv[ty]+')';toastT=1.2;
 }
 function drop(){
-  if(inv.stick<1)return;inv.stick--;addStick(P.x-Math.sin(P.yaw)*1.5,P.z-Math.cos(P.yaw)*1.5);renderInv();
+  dropHeld();
 }
 const rings=[],rGeo=new THREE.RingGeometry(.8,1,28).rotateX(-Math.PI/2);
 for(let i=0;i<10;i++){const m=new THREE.Mesh(rGeo,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,depthWrite:false}));m.visible=false;scene.add(m);rings.push({m,a:9})}
