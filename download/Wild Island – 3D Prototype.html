@@ -233,12 +233,13 @@ function renderInv(){
 }
 // ---------- hotbar + placing ----------
 NM.axe=['🪓','Stone Axe'];NM.meat=['🥩','Raw Meat'];inv.axe=0;inv.meat=0;
-const invHotEl=document.getElementById('invhot'),hot={sel:1,idx:[0,0,0],item:[null,null,null]},PL=['bench','campfire','torch','purifier'],LB=['Weapon','Place','Any'];
+const invHotEl=document.getElementById('invhot'),hot={sel:1,idx:[0,0,0],item:[null,null,null]},PL=['bench','campfire','torch','purifier','chest'],LB=['Weapon','Place','Any'];
 NM.pickaxe=['⛏️','Stone Pickaxe'];NM.coal=['⚫','Coal'];inv.pickaxe=0;inv.coal=0;
 NM.campfire=['🏕️','Campfire'];NM.torch=['🕯️','Torch'];NM.cooked=['🍖','Cooked Meat'];inv.campfire=0;inv.torch=0;inv.cooked=0;
 NM.herb=['🌿','Herb'];NM.coconut=['🥥','Coconut'];inv.herb=0;inv.coconut=0;
 NM.bottle=['🍶','Bottle (Empty)'];NM.sea=['🌊','Bottle of Seawater'];NM.dwater=['💧','Bottle of Drinking Water'];NM.salve=['🩹','Healing Salve'];NM.coconutdrink=['🥤','Shredded Coconut Drink'];NM.purifier=['⚗️','Water Purificator'];
 inv.bottle=0;inv.sea=0;inv.dwater=0;inv.salve=0;inv.coconutdrink=0;inv.purifier=0;
+NM.chest=['📦','Chest'];inv.chest=0;
 const ELIG=[['knife','axe','pickaxe','torch'],PL,Object.keys(NM)];
 const hotEl=document.getElementById('hotbar');let hotSig='',ghost=null,ghostT=null;
 const bxG=new THREE.BoxGeometry(1,1,1),wood=new THREE.MeshStandardMaterial({color:0x8a5a2b,roughness:.9}),wood2=new THREE.MeshStandardMaterial({color:0xb98a50,roughness:.9});
@@ -255,6 +256,7 @@ function mk(t){
   else if(t==='plank')add(bxG,wood2,0,.04,0,1.4,.07,.3);
   else if(t==='stick')add(sGeo,sMat,0,.05,0);
   else if(t==='stone')add(stGeo,stMat,0,.07,0,1,.65,1.2);
+  else if(t==='chest'){add(bxG,wood,0,.25,0,1,.5,.7);add(bxG,wood2,0,.57,0,1.04,.16,.74);add(bxG,spMat,0,.45,.37,.12,.14,.04)}
   else if(t==='purifier'){add(bxG,wood,0,.3,0,.9,.6,.9);add(cylG,purMat,0,.95,0,1,1,1)}
   else if(t==='campfire'){for(let i=0;i<3;i++){const m=new THREE.Mesh(bxG,wood);m.scale.set(.1,.1,.9);m.position.y=.1;m.rotation.y=i*1.05;m.castShadow=true;g.add(m)}for(let i=0;i<8;i++)add(stGeo,stMat,Math.cos(i*.785)*.65,.07,Math.sin(i*.785)*.65,1.1,.7,1.1);const f=new THREE.Mesh(flG,flMat);f.position.y=.4;f.scale.set(2,2,2);g.add(f);g.userData.flame=f}
   else if(t==='torch'){add(bxG,wood,0,.55,0,.07,1.1,.07);const f=new THREE.Mesh(flG,flMat);f.position.y=1.2;g.add(f);g.userData.flame=f}
@@ -280,12 +282,12 @@ scene.add(camera);camera.add(hand);
 // ---------- animals, combat, crafting bench ----------
 const WP={knife:{dmg:2,reach:2.2,cd:420},axe:{dmg:4,reach:2.5,cd:700},pickaxe:{dmg:3,reach:2.4,cd:700},torch:{dmg:1,reach:2.2,cd:420}};
 const meatMat=new THREE.MeshStandardMaterial({color:0xd9606a,roughness:.7}),aSph=new THREE.IcosahedronGeometry(1,1),animals=[];
-let benchMode=false;const BREC=[{id:'axe',cost:{sharpstone:3,stick:3}},{id:'pickaxe',cost:{sharpstone:5,stick:3}},{id:'campfire',cost:{stone:10,stick:15,coal:4}},{id:'torch',cost:{stick:3,coal:1}},{id:'bottle',cost:{stick:5,stone:1}},{id:'salve',cost:{herb:5,dwater:1}},{id:'coconutdrink',cost:{coconut:2,dwater:1}},{id:'purifier',cost:{stick:4,bottle:1,coal:3,stone:3}}];
+let benchMode=false;const BREC=[{id:'axe',cost:{sharpstone:3,stick:3}},{id:'pickaxe',cost:{sharpstone:5,stick:3}},{id:'campfire',cost:{stone:10,stick:15,coal:4}},{id:'torch',cost:{stick:3,coal:1}},{id:'bottle',cost:{stick:5,stone:1}},{id:'salve',cost:{herb:5,dwater:1}},{id:'coconutdrink',cost:{coconut:2,dwater:1}},{id:'purifier',cost:{stick:4,bottle:1,coal:3,stone:3}},{id:'chest',cost:{stick:12,stone:1}}];
 function exitBench(){if(!benchMode)return;benchMode=false;REC.length=4;sideEl.style.display='none';curStation=null;invEl.querySelector('h2').textContent='Inventory'}
 function toggleBench(){
   if(benchMode){exitBench();toggleInv();return}
   if(invEl.classList.contains('open')||!nearBench)return;
-  benchMode=true;const tt=nearBench.userData.t;if(tt==='bench')REC.push(...BREC);invEl.querySelector('h2').textContent=tt==='bench'?'Crafting Bench':tt==='campfire'?'Campfire':'Water Purificator';curStation=tt==='bench'?null:nearBench;toggleInv();renderStation();
+  benchMode=true;const tt=nearBench.userData.t;if(tt==='bench')REC.push(...BREC);invEl.querySelector('h2').textContent=tt==='bench'?'Crafting Bench':tt==='campfire'?'Campfire':tt==='chest'?'Chest':'Water Purificator';curStation=tt==='bench'?null:nearBench;toggleInv();renderStation();
 }
 function mkAnimal(t){
   const g=new THREE.Group(),u=g.userData,mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.9,flatShading:true});
@@ -530,11 +532,13 @@ function stInfo(st){const c=st.userData.t==='campfire';return{n:c?4:1,T:c?10:8,r
 function slotsOf(st){return st.userData.slots||(st.userData.slots=Array.from({length:stInfo(st).n},()=>({s:0,p:0})))}
 function renderStation(){
   if(!curStation){sideEl.style.display='none';return}
+  if(curStation.userData.t==='chest'){renderChest();return}
   const I=stInfo(curStation),sl=slotsOf(curStation);
   sideEl.innerHTML='<h3>'+I.title+'</h3><div class="grid">'+sl.map((s,i)=>'<div class="sb" data-i="'+i+'"><div class="slot">'+(s.s===1?NM[I.raw][0]:s.s===2?NM[I.out][0]:'')+'</div>'+(s.s?'<div class="pbw"><div class="pb" style="width:'+(s.p*100)+'%"></div></div>':'')+'</div>').join('')+'</div><p style="font-size:11px;opacity:.7;margin:8px 0 0">Click an empty box to add '+NM[I.raw][1]+'.<br>Click a finished box to collect.</p>';
   sideEl.style.display='block';
 }
 sideEl.addEventListener('click',e=>{
+  if(curStation&&curStation.userData.t==='chest'){const c=e.target.closest('.cb');if(c)chestTake(c.dataset.k,e.shiftKey);return}
   const b=e.target.closest('.sb');if(!b||!curStation)return;
   const I=stInfo(curStation),s=slotsOf(curStation)[+b.dataset.i];
   if(s.s===0){if(inv[I.raw]>0){inv[I.raw]--;s.s=1;s.p=0}else{toastMsg='Needs '+NM[I.raw][1];toastT=1.2}}
@@ -612,6 +616,22 @@ function dropHeld(){
   for(let i=0;i<n;i++){const x=gx+rr(-.4,.4),z=gz+rr(-.4,.4),m=mk(it);m.position.set(x,H(x,z),z);m.rotation.y=rnd()*6.28;scene.add(m);sticks.push(m)}
   inv[it]-=n;toastMsg='Dropped '+NM[it][1]+(n>1?' x'+n:'');toastT=.8;renderInv();
 }
+// ---------- chest storage ----------
+function renderChest(){
+  const st=curStation.userData.store||(curStation.userData.store={}),ks=Object.keys(st).filter(k=>st[k]>0);
+  let h='<h3>Chest</h3><div class="grid" style="grid-template-columns:repeat(3,64px)">';
+  for(let i=0;i<12;i++){const k=ks[i];h+='<div'+(k?' class="cb" data-k="'+k+'" style="cursor:pointer"':'')+'><div class="slot">'+(k?NM[k][0]+'<b>'+st[k]+'</b><small>'+NM[k][1]+'</small>':'')+'</div></div>'}
+  sideEl.innerHTML=h+'</div><p style="font-size:11px;opacity:.7;margin:8px 0 0">Click an item here to take it,<br>click an inventory item to store it.<br>Shift = whole stack.</p>';
+  sideEl.style.display='block';
+}
+function chestPut(k,all){
+  const st=curStation.userData.store||(curStation.userData.store={});
+  if(!(st[k]>0)&&Object.keys(st).filter(x=>st[x]>0).length>=12){toastMsg='The chest is full';toastT=1;return}
+  const n=all?inv[k]:1;st[k]=(st[k]||0)+n;inv[k]-=n;renderChest();renderInv();
+}
+function chestTake(k,all){
+  const st=curStation.userData.store,n=all?st[k]:1;st[k]-=n;inv[k]+=n;renderChest();renderInv();
+}
 function hotTick(){
   const w0=slotItem(0);hand.visible=hot.sel===0&&!!w0&&!invEl.classList.contains('open');hb1.visible=hb2.visible=w0==='knife';hax1.visible=w0==='axe'||w0==='pickaxe'||w0==='torch';hfl.visible=w0==='torch';hax2.visible=w0==='axe';hpk.visible=w0==='pickaxe';
   const now=performance.now(),sp=(now-swingT)/swingDur;let a=0;
@@ -632,7 +652,7 @@ function place(){
   const gx=P.x-Math.sin(P.yaw)*3,gz=P.z-Math.cos(P.yaw)*3;
   if(H(gx,gz)<-.1){toastMsg='Cannot place in water';toastT=.8;return}
   const o=mk(it);o.position.set(gx,H(gx,gz),gz);o.rotation.y=P.yaw;scene.add(o);sticks.push(o);
-  if(it==='bench'){const c={x:gx,z:gz,r:1};colliders.push(c);o.userData.c=c}
+  if(it==='bench'||it==='chest'){const c={x:gx,z:gz,r:it==='chest'?.7:1};colliders.push(c);o.userData.c=c}
   if(it==='campfire'||it==='torch')fires.push(o);if(it==='campfire'||it==='purifier')stations.push(o);
   inv[it]--;toastMsg='Placed '+NM[it][1];toastT=.8;
 }
@@ -641,6 +661,7 @@ invHotEl.addEventListener('click',e=>{const b=e.target.closest('.hb');if(!b)retu
 slotsEl.addEventListener('click',e=>{
   const b=e.target.closest('.slot');if(!b)return;
   const k=Object.keys(NM).filter(k=>inv[k]>0)[[...slotsEl.children].indexOf(b)];if(!k)return;
+  if(curStation&&curStation.userData.t==='chest'){chestPut(k,e.shiftKey);return}
   const i=hot.sel;if(!ELIG[i].includes(k)){toastMsg=NM[k][1]+' cannot go in the '+LB[i]+' slot';toastT=1.4;return}
   hot.item[i]=k;renderHot();
 });
@@ -651,7 +672,7 @@ function toggleInv(){
   else if(wasLocked){try{const p=renderer.domElement.requestPointerLock();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
 }
 function pickup(){
-  if(!nearStick)return;const ty=nearStick.userData.t;const cl=nearStick.userData.c;if(cl)colliders.splice(colliders.indexOf(cl),1);const fi=fires.indexOf(nearStick);if(fi>=0)fires.splice(fi,1);const si=stations.indexOf(nearStick);if(si>=0){stations.splice(si,1);for(const s of nearStick.userData.slots||[]){const c=nearStick.userData.t==='campfire';if(s.s===1)inv[c?'meat':'sea']++;else if(s.s===2)inv[c?'cooked':'dwater']++}}scene.remove(nearStick);sticks.splice(sticks.indexOf(nearStick),1);nearStick=null;
+  if(!nearStick)return;const ty=nearStick.userData.t;const cl=nearStick.userData.c;if(cl)colliders.splice(colliders.indexOf(cl),1);const fi=fires.indexOf(nearStick);if(fi>=0)fires.splice(fi,1);const si=stations.indexOf(nearStick);if(si>=0){stations.splice(si,1);for(const s of nearStick.userData.slots||[]){const c=nearStick.userData.t==='campfire';if(s.s===1)inv[c?'meat':'sea']++;else if(s.s===2)inv[c?'cooked':'dwater']++}}if(nearStick.userData.store)for(const k in nearStick.userData.store)inv[k]+=nearStick.userData.store[k];if(curStation===nearStick){curStation=null;renderStation()}scene.remove(nearStick);sticks.splice(sticks.indexOf(nearStick),1);nearStick=null;
   inv[ty]++;renderInv();toastMsg='Picked up '+NM[ty][1]+' (x'+inv[ty]+')';toastT=1.2;
 }
 function drop(){
@@ -660,11 +681,11 @@ function drop(){
 const rings=[],rGeo=new THREE.RingGeometry(.8,1,28).rotateX(-Math.PI/2);
 for(let i=0;i<10;i++){const m=new THREE.Mesh(rGeo,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,depthWrite:false}));m.visible=false;scene.add(m);rings.push({m,a:9})}
 function interact(dt){
-  let nd=2.4;nearStick=null;nearBench=null;for(const s of sticks)if((s.userData.t==='bench'||s.userData.t==='campfire'||s.userData.t==='purifier')&&Math.hypot(P.x-s.position.x,P.z-s.position.z)<3.2)nearBench=s;
+  let nd=2.4;nearStick=null;nearBench=null;for(const s of sticks)if((s.userData.t==='bench'||s.userData.t==='campfire'||s.userData.t==='purifier'||s.userData.t==='chest')&&Math.hypot(P.x-s.position.x,P.z-s.position.z)<3.2)nearBench=s;
   for(const s of sticks){const d=Math.hypot(P.x-s.position.x,P.z-s.position.z);if(d<nd){nd=d;nearStick=s}}
   toastT-=dt;
   if(toastT>0){promptEl.textContent=toastMsg;promptEl.style.display='block'}
-  else if(nearBench&&!benchMode){promptEl.textContent='R: use '+(nearBench.userData.t==='bench'?'Crafting Bench':nearBench.userData.t==='campfire'?'Campfire':'Water Purificator')+(nearStick===nearBench?' · F: pick up':'');promptEl.style.display='block'}
+  else if(nearBench&&!benchMode){promptEl.textContent='R: use '+(nearBench.userData.t==='bench'?'Crafting Bench':nearBench.userData.t==='campfire'?'Campfire':nearBench.userData.t==='chest'?'Chest':'Water Purificator')+(nearStick===nearBench?' · F: pick up':'');promptEl.style.display='block'}
   else if(nearStick){promptEl.textContent='Press F to pick up '+NM[nearStick.userData.t][1];promptEl.style.display='block'}
   else promptEl.style.display='none';
   ringCd-=dt;hotTick();animalsTick(dt);caveTick(dt);firesTick(dt);survTick(dt);stationsTick(dt);const g=H(P.x,P.z);
