@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Thirteen Nights at Discovery</title>
+<style>
+:root{color-scheme:dark;--bg:#07090a;--panel:#0e1412;--line:#1f3a2e;--fg:#b9e8c9;--dim:#5d8a70;--acc:#e8d44d;--red:#d33}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:"Courier New",monospace}
+body{padding:env(safe-area-inset-top,0) 12px env(safe-area-inset-bottom,0);min-height:100vh}
+h1{font-size:18px;letter-spacing:3px;margin:14px 0 2px;text-transform:uppercase}
+.sub{color:var(--dim);font-size:12px;margin-bottom:12px}
+.wrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;max-width:1000px;margin:auto}
+@media(max-width:760px){.wrap{grid-template-columns:1fr}}
+.box{background:var(--panel);border:1px solid var(--line);padding:8px}
+canvas{width:100%;display:block;background:#000;border:1px solid var(--line);cursor:crosshair}
+.bar{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;color:var(--dim)}
+.rec{color:var(--red)}
+.tabs{display:flex;gap:6px;margin-bottom:6px}
+button{font:inherit;background:#0a100e;color:var(--fg);border:1px solid var(--line);padding:6px 10px;cursor:pointer}
+button.on{background:var(--line);color:#fff;border-color:var(--fg)}
+svg{width:100%;display:block}
+.room rect{fill:#0a100e;stroke:var(--line);stroke-width:1.5;cursor:pointer}
+.room text{fill:var(--fg);font-size:9px;text-anchor:middle;pointer-events:none}
+.room .n{fill:var(--acc);font-size:8px}
+.room:hover rect{stroke:var(--fg)}
+.room.you rect{stroke:var(--red);stroke-width:2;cursor:default}
+.room.you .n{fill:var(--red)}
+.room.sel rect{stroke:var(--acc);stroke-width:2.5;fill:#16241d}
+.edge{stroke:var(--line);stroke-width:2;stroke-dasharray:4 3}
+.edge.hl{stroke:var(--acc);stroke-dasharray:none}
+.note{font-size:11px;color:var(--dim);margin-top:6px}
+.exits{font-size:12px;margin-top:6px}
+[hidden]{display:none!important}
+#title{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;background:repeating-linear-gradient(0deg,rgba(185,232,201,.04) 0 2px,transparent 2px 4px),radial-gradient(ellipse at center,#0f1c16 0%,#000 75%)}
+#title>div{max-width:420px;width:100%}
+.tt{font-size:clamp(28px,8vw,52px);letter-spacing:4px;text-transform:uppercase;line-height:1.1;color:#cdf5da;text-shadow:0 0 18px rgba(120,220,160,.35);animation:fl 5s infinite}
+.ts{color:var(--dim);letter-spacing:3px;font-size:13px;margin:10px 0 28px}
+#title button{display:block;width:100%;max-width:260px;margin:10px auto;padding:12px;font-size:16px;letter-spacing:2px;text-transform:uppercase;background:transparent}
+#title button:hover:not(:disabled){background:var(--line);color:#fff}
+#title button:disabled{opacity:.35;cursor:default}
+.cr{color:var(--dim);font-size:13px;line-height:1.9;margin-bottom:20px}.cr b{color:var(--fg);font-weight:normal}
+@keyframes fl{0%,92%,100%{opacity:1}93%{opacity:.4}95%{opacity:1}97%{opacity:.6}}
+@media(prefers-reduced-motion:reduce){.tt{animation:none}}
+.pro{white-space:pre-line;font-size:clamp(17px,4.4vw,24px);line-height:1.6;color:#cdf5da;min-height:150px;margin-bottom:24px;display:flex;align-items:center;justify-content:center}
+#roster{font-size:12px;line-height:1.55;max-height:430px;overflow:auto}
+#roster .rec{border:1px solid var(--line);padding:8px;margin-bottom:8px}
+.rd{background:#b9e8c9;color:#b9e8c9;user-select:none}
+.lk{color:var(--dim)}
+#ch2{position:fixed;inset:0;z-index:55;background:#060a08;overflow:auto;padding:16px}
+.c2in{max-width:640px;margin:auto}
+.c2h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;font-size:15px}
+.c2p{border:1px solid var(--line);padding:10px;margin-bottom:10px;background:var(--panel);font-size:13px;line-height:1.55}
+#ch2 button{display:block;margin:8px 0 2px;padding:8px 12px}
+#ch2 button:disabled{opacity:.4;cursor:default}
+#leoShade{width:54px;height:130px;margin:0 auto 14px;display:block;fill:#000;stroke:#4e8a6c;stroke-width:1;animation:lf 1.4s steps(1) infinite}
+@keyframes lf{0%{opacity:.85}8%{opacity:0}12%{opacity:.5}20%{opacity:0}35%{opacity:.9}40%{opacity:.1}55%{opacity:.7}60%{opacity:0}75%{opacity:.6}100%{opacity:.15}}
+@media(prefers-reduced-motion:reduce){#leoShade{animation:none;opacity:.5}}
+#bDoor{display:block;margin-top:8px}
+#devGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+#title #devGrid button{margin:0;padding:12px 0;max-width:none;width:auto;font-size:15px}
+</style>
+</head>
+<body>
+<h1>Thirteen Nights at Discovery</h1>
+<div class="sub">Security camera system · build 0.1 · cameras &amp; floor plan only</div>
+<div class="wrap">
+  <div class="box">
+    <div class="tabs"><button id="tO" class="on">Office</button><button id="tC">Cameras</button><button id="tR">Roster</button><button id="bSpd" style="margin-left:auto">Speed 1x</button><button id="bMenu">Menu</button></div>
+    <div class="bar"><span id="camName">CAM 01</span><span><span class="rec">● REC</span> <span id="clock">12:00 AM</span></span></div>
+    <div class="note" id="austin" hidden></div>
+    <div class="note" id="cred" hidden></div>
+    <div class="note" id="oxy" hidden></div>
+    <div class="note" id="dura" hidden></div>
+    <canvas id="feed" width="560" height="340"></canvas>
+    <canvas id="office" width="560" height="340"></canvas>
+    <div class="exits" id="exits"></div>
+    <button id="bRice" hidden>🍚 Rice Drop</button>
+    <div class="note" id="toast" style="color:var(--acc)"></div>
+    <button id="bGive" hidden>Hold: Give AI Credits (+15%/s)</button>
+    <div class="note" id="offNote">Office: move the mouse (or press A / D, ← / →) to look around. SPACE or the desk monitor opens the cameras. Click the door (or press E) to close it. <button id="bDoor">Close 7th Grade door (E)</button><button id="bVent" hidden style="display:block;margin-top:8px">Close vent (V)</button></div>
+    <div id="roster" hidden></div>
+    <div class="note">Click a doorway in the feed or a room on the map. Keys 1–9, 0 and - jump to CAM 01–11.</div>
+  </div>
+  <div class="box">
+    <div class="tabs"><button id="tB" hidden>B1 Parking</button><button id="t1" class="on">Main Floor</button><button id="t2">Upper Floor</button></div>
+    <svg id="map" viewBox="0 0 450 490"></svg>
+    <div class="note" id="mapNote"></div>
+  </div>
+</div>
+<div id="ch2" hidden>
+<div class="c2in">
+  <div class="c2h"><span><b id="c2t">Day 1</b><span id="c2a"></span></span><button id="c2x" style="margin:0">Menu</button></div>
+  <div class="c2p" id="c2intro"></div>
+  <div class="c2p"><b>Leads</b><div id="c2main"></div><button id="c2hint">Ask Austin for a hint</button></div>
+  <div class="c2p" id="c2res" hidden></div>
+  <div class="c2p"><b>Notebook</b><div id="c2nb"></div></div>
+  <button id="c2end">End the day — night falls</button>
+</div>
+</div>
+<div id="title">
+  <div id="tMenu">
+    <div class="tt">Thirteen Nights<br>at Discovery</div>
+    <div class="ts">A SCHOOL AFTER DARK</div>
+    <button id="bNew">New Game</button>
+    <button id="bCont">Continue</button>
+    <button id="bChap">Chapters</button>
+    <button id="bCred">Credits</button>
+    <button id="bSet">Settings</button>
+    <button id="bDev">Dev: Level Select</button>
+  </div>
+  <div id="tCred" hidden>
+    <div class="tt" style="font-size:30px">Credits</div>
+    <div class="ts">THIRTEEN NIGHTS AT DISCOVERY</div>
+    <div class="cr"><b>Created by</b><br>[Your name here]<br><br><b>Programming</b><br>Claude<br><br><b>Inspired by</b><br>Five Nights at Freddy’s<br>by Scott Cawthon</div>
+    <button id="bBack">Back</button>
+  </div>
+  <div id="tCh" hidden>
+    <div class="tt" style="font-size:26px">Chapters</div>
+    <div class="ts">SELECT</div>
+    <button id="bCh1">Chapter 1: Discovery</button>
+    <button id="bCh2">Chapter 2: Paris</button>
+    <div class="cr" id="chStat"></div>
+    <button id="bChBack">Back</button>
+  </div>
+  <div id="tSet" hidden>
+    <div class="tt" style="font-size:26px">Settings</div>
+    <div class="ts">AUDIO</div>
+    <button id="bSnd">Sound: ON</button>
+    <button id="bFr">Friend sounds: OFF</button>
+    <div class="cr" id="frStat"></div>
+    <button id="bSetBack">Back</button>
+  </div>
+  <div id="tDev" hidden>
+    <div class="tt" style="font-size:26px">Level Select</div>
+    <div class="ts">DEV — DOESN’T OVERWRITE YOUR SAVE</div>
+    <div id="devGrid"></div>
+    <button id="bDevBack">Back</button>
+  </div>
+  <div id="tPro" hidden>
+    <svg id="leoShade" viewBox="0 0 60 150" hidden><circle cx="30" cy="20" r="14"/><rect x="14" y="36" width="32" height="48"/><rect x="16" y="84" width="10" height="46"/><rect x="34" y="84" width="10" height="46"/><rect x="6" y="38" width="8" height="40"/><rect x="46" y="38" width="8" height="40"/></svg>
+    <div class="pro" id="proTxt"></div>
+    <div class="ts">click to continue</div>
+    <button id="bSkip">Skip</button>
+  </div>
+  <div id="tEnd" hidden>
+    <div class="tt" id="endT"></div>
+    <div class="ts" id="endS"></div>
+    <button id="bRetry">Retry</button>
+    <button id="bEndMenu">Menu</button>
+  </div>
+  <div id="tIntro" hidden>
+    <div class="tt" id="introN">Night 1</div>
+    <div class="ts">12:00 AM</div>
+  </div>
+</div>
+<script>
+// ---- Floor plan data ----
+const ROOMS = {
+  band:    {n:'01',name:'Band Room',        f:1,x:10, y:10, w:90, h:55},
+  orch:    {n:'02',name:'Orchestra',        f:1,x:125,y:10, w:90, h:55},
+  well:    {n:'03',name:'Wellness Corner',  f:1,x:240,y:10, w:90, h:55},
+  hall:    {n:'04',name:'Musical Hallway',  f:1,x:10, y:90, w:320,h:36},
+  gym:     {n:'05',name:'Gym',              f:1,x:10, y:150,w:90, h:80},
+  commons: {n:'06',name:'Commons',          f:1,x:125,y:150,w:90, h:80},
+  cafe:    {n:'07',name:'Cafeteria',        f:1,x:240,y:150,w:90, h:80},
+  c1:      {n:'08',name:'Corridor 1',       f:1,x:125,y:255,w:42, h:36},
+  c2:      {n:'09',name:'Corridor 2',       f:1,x:173,y:255,w:42, h:36},
+  stair1:  {n:'10',name:'Stairway 1',       f:1,x:240,y:255,w:90, h:36},
+  grade8:  {n:'11',name:'8th Grade',        f:1,x:10, y:320,w:90, h:50},
+  stair2:  {n:'12',name:'Stairway 2',       f:1,x:10, y:255,w:90, h:36},
+  rot:     {n:'13',name:'Rotation Hallway', f:1,x:125,y:320,w:90, h:36},
+  main:    {n:'14',name:'Main Doors / Office',f:1,x:230,y:320,w:100,h:50},
+  stair3:  {n:'15',name:'Stairway 3',       f:1,x:125,y:385,w:90, h:30},
+  stair4:  {n:'16',name:'Stairway 4',       f:1,x:10, y:385,w:90, h:30},
+  ucommons:{n:'17',name:'Upper Commons',    f:2,x:245,y:255,w:85, h:60},
+  bcommons:{n:'18',name:'Back Commons',     f:2,x:10, y:255,w:85, h:60},
+  imc:     {n:'19',name:'IMC',              f:2,x:105,y:255,w:130,h:40},
+  g6:      {n:'20',name:'6th Grade',        f:2,x:30, y:355,w:90, h:50},
+  g7:      {n:'21',name:'7th Grade',        f:2,x:220,y:355,w:90, h:50},
+  vent:    {n:'22',name:'Ventilation (Upper)',f:2,x:100,y:430,w:110,h:40,short:'Vent Up'},
+  ventL:   {n:'23',name:'Ventilation (Lower)',f:1,x:335,y:270,w:110,h:40,short:'Vent Low'},
+  office:  {n:'--',name:'Social Studies',    f:2,x:220,y:430,w:90, h:40,you:true},
+};
+const EDGES = [
+  ['commons','cafe'],['commons','gym'],['commons','hall'],['commons','stair1'],
+  ['commons','c1'],['commons','c2'],
+  ['hall','well'],['hall','band'],['hall','orch'],['hall','gym'],['hall','cafe'],
+  ['c1','grade8'],['c1','stair2'],['c1','rot'],
+  ['c2','main'],['c2','rot'],
+  ['rot','stair3'],['grade8','stair4'],
+  ['stair1','ucommons'],['stair2','bcommons'],['stair3','g6'],['stair4','g7'], // stairways between floors
+  ['ucommons','imc'],['bcommons','imc'],
+  ['ucommons','g6'],['ucommons','g7'],['bcommons','g6'],['bcommons','g7'],
+  ['g7','office'],['vent','office'],
+  ['vent','ventL'],['ventL','commons']
+];
+const KEYS = Object.keys(ROOMS);
+const keymap = {'1':0,'2':1,'3':2,'4':3,'5':4,'6':5,'7':6,'8':7,'9':8,'0':9,'-':10};
+const neighbors = id => EDGES.filter(e=>e.includes(id)).map(e=>e[0]===id?e[1]:e[0]);
+
+let cur='commons', floor=1;
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+const ctr = r => [r.x+r.w/2, r.y+r.h/2];
+
+// ---- Map rendering ----
+function drawMap(){
+  const svg=$('map'); svg.innerHTML='';
+  const nb=neighbors(cur);
+  EDGES.forEach(([a,b])=>{
+    const A=ROOMS[a],B=ROOMS[b];
+    if(A.f!==floor||B.f!==floor) return;
+    const [x1,y1]=ctr(A),[x2,y2]=ctr(B);
+    const l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+    l.setAttribute('class','edge'+((a===cur||b===cur)?' hl':''));
+    svg.appendChild(l);
+  });
+  Object.entries(ROOMS).forEach(([id,r])=>{
+    if(r.f!==floor) return;
+    const g=document.createElementNS(NS,'g');
+    g.setAttribute('class','room'+(id===cur?' sel':'')+(ROOMS[id].you?' you':''));
+    g.innerHTML=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="2"/>
+      <text class="n" x="${r.x+r.w/2}" y="${r.y+r.h/2-3}">${r.you?'YOU ARE HERE':'CAM '+r.n}</text>
+      <text x="${r.x+r.w/2}" y="${r.y+r.h/2+9}">${r.name.length>12&&r.w<60?r.name.replace('Corridor ','Cor. '):r.name}</text>`;
+    g.onclick=()=>go(id);
+    svg.appendChild(g);
+  });
+  if(false){
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',170);t.setAttribute('y',230);t.setAttribute('fill','#5d8a70');
+    t.setAttribute('font-size','10');t.setAttribute('text-anchor','middle');
+    t.textContent='Upper floor layout: coming soon';
+    svg.appendChild(t);
+  }
+  $('t1').classList.toggle('on',floor===1);$('t2').classList.toggle('on',floor===2);$('tB').classList.toggle('on',floor===0);
+  $('mapNote').textContent=CH===2?'Hotel map: dashed lines show which spaces connect. Gold lines connect to the selected camera.':floor===1?'Dashed lines show which rooms connect. Gold lines connect to the selected camera.':'Stairs are the only way up: Stairway 1 → Upper Commons, 2 → Back Commons, 3 → 6th Grade, 4 → 7th Grade. Use the doorways in the feed to climb.';
+}
+
+function go(id){
+  if(ROOMS[id].you)return;
+  cur=id; floor=ROOMS[id].f; flick=14; setMode('cam');
+  $('camName').textContent=`CAM ${ROOMS[id].n} — ${ROOMS[id].name.toUpperCase()}`;
+  $('exits').innerHTML='Connects to: '+neighbors(id).map(n=>`<button data-id="${n}">${ROOMS[n].name}</button>`).join(' ');
+  $('exits').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.id));
+  drawMap();
+}
+$('t1').onclick=()=>{floor=1;drawMap()};
+$('t2').onclick=()=>{floor=2;drawMap()};
+addEventListener('keydown',e=>{if(e.key in keymap)go(KEYS[keymap[e.key]])});
+
+// ---- Room scenes (what each camera sees) ----
+const R=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h)};
+const S=(x,y,w,h,c)=>{ctx.strokeStyle=c;ctx.lineWidth=1;ctx.strokeRect(x,y,w,h)};
+const T=(s,x,y,c,f='11px Courier New')=>{ctx.fillStyle=c;ctx.font=f;ctx.textAlign='center';ctx.fillText(s,x,y)};
+const C=(x,y,rx,ry,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,7);ctx.fill()};
+const CS=(x,y,rx,ry,c)=>{ctx.strokeStyle=c;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,7);ctx.stroke()};
+const GL='#1c3a2d',GM='#2d5a45',GD='#0d1a14',GT='#4e8a6c';
+const lockers=(x,y,w,h)=>{for(let i=0;i<w/14;i++){R(x+i*14,y,12,h,'#142a22');R(x+i*14+8,y+h*.4,2,6,GM)}};
+const stand=(x,y)=>{R(x,y,1,22,GM);R(x-7,y-9,14,9,GL)};
+const board=(x,y,w,h,a,b)=>{R(x,y,w,h,'#1b2b24');S(x,y,w,h,GM);T(a,x+w/2,y+h/2+(b?-2:4),GT,'bold 12px Courier New');if(b)T(b,x+w/2,y+h/2+13,'#3a6a52','10px Courier New')};
+const desks=(y,n)=>{for(let i=0;i<n;i++){const x=60+i*(440/n);R(x,y,34,6,'#14231c');R(x+3,y+6,2,12,GD);R(x+29,y+6,2,12,GD)}};
+const shelf=(x,y,w,h)=>{R(x,y,w,h,'#101e18');for(let r=0;r<4;r++){const b=y+(r+1)*h/4-2;R(x,b,w,2,GM);for(let j=0;j<w/7;j++){const k=8+(j*7+r*3)%6;R(x+j*7+2,b-k,4,k,GL)}}};
+const table=(x,y,w)=>{R(x,y,w,7,'#14231c');R(x+6,y+7,3,16,GD);R(x+w-9,y+7,3,16,GD);R(x,y+26,w,4,'#101e18')};
+const cls=(a,b)=>()=>{board(220,64,140,44,a,b);S(130,70,40,36,GM);S(400,70,40,36,GM);desks(232,6);desks(272,5);R(420,236,70,8,'#16301f')};
+const corr=n=>()=>{lockers(112,62,110,48);lockers(340,62,110,48);board(235,66,90,38,'CORRIDOR '+n,n==1?'8th Gr / Stairs':'Main Office');R(250,58,60,3,'rgba(185,232,201,.5)');R(255,214,50,126,'#0c1813')};
+const st=n=>()=>{for(let i=0;i<6;i++)R(190+i*20,120-(i+1)*9,20,(i+1)*9,'#14281f');ctx.strokeStyle=GM;ctx.beginPath();ctx.moveTo(185,118);ctx.lineTo(315,60);ctx.stroke();board(375,66,75,28,'STAIRWAY '+n);R(150,232,260,4,'rgba(232,212,77,.35)')};
+const duct=b=>()=>{for(let i=0;i<6;i++){R(110+i*28,60+i*18,340-56*i,150-36*i,i%2?'#0a110e':'#101a16');S(110+i*28,60+i*18,340-56*i,150-36*i,GM)}R(250,150,60,40,b?'#16301f':'#050a08');for(let i=0;i<5;i++)R(254,154+i*8,52,3,'#030605');R(0,212,560,128,'#0a0f0d');for(let i=0;i<16;i++)R(i*36,222,28,2,GD)};
+const SCENE={
+  band:()=>{lockers(125,66,170,42);R(330,70,110,34,'#14231c');T('♪ BAND ♪',385,92,GM,'bold 13px Courier New');R(140,228,280,10,'#101e18');R(120,250,320,10,'#12241c');R(100,272,360,10,'#14281f');[170,250,330,400].forEach(x=>stand(x,236));C(470,300,28,9,GL);C(515,282,16,6,GL)},
+  orch:()=>{board(200,64,160,38,'ORCHESTRA');S(130,70,30,30,GM);S(400,70,30,30,GM);[160,240,320,400].forEach(x=>{C(x,285,12,18,GL);R(x-1,255,2,30,GM);R(x-12,305,24,5,'#14231c')});R(260,260,40,18,'#14231c');stand(280,262)},
+  well:()=>{C(130,85,18,18,'rgba(232,212,77,.12)');T('BREATHE',280,86,GT,'bold 14px Courier New');S(360,68,40,40,GM);C(280,290,110,22,'#12241c');C(225,285,26,14,GL);C(340,290,28,14,'#183226');R(385,245,80,22,'#14281f');R(150,240,10,22,GD);C(155,236,15,12,'#1d4a35')},
+  hall:()=>{lockers(122,64,100,46);lockers(338,64,108,46);T('♪ ♫ ♪',280,86,GM,'18px Courier New');R(250,214,60,126,'#0c1813')},
+  gym:()=>{R(0,212,560,128,'rgba(120,80,30,.12)');R(250,64,60,38,'#1b2b24');S(250,64,60,38,GM);R(268,100,24,2,'#c77');R(130,66,70,24,'#0a0f0d');T('00 : 00',165,83,'#d33');S(190,225,180,100,GM);S(250,225,60,50,GM);CS(280,275,28,10,GM);R(0,240,90,12,'#14231c');R(0,256,100,12,'#14231c');R(0,272,110,12,'#14231c')},
+  commons:()=>{T('DISCOVERY',280,88,GT,'bold 18px Courier New');S(125,68,55,40,GM);S(400,68,55,40,GM);C(430,80,5,5,'#9ab');table(90,246,90);table(230,252,100);table(380,246,90);CS(280,312,60,10,GM)},
+  cafe:()=>{R(125,80,210,28,'#14231c');S(125,64,210,16,GM);board(345,64,100,40,'MENU','Pizza Friday');table(50,244,200);table(310,244,200);R(500,250,18,30,'#16241d')},
+  c1:corr(1),c2:corr(2),stair1:st(1),stair2:st(2),stair3:st(3),stair4:st(4),
+  grade8:cls('8TH GRADE','Pre-Algebra'),g6:cls('6TH GRADE','Ancient Rome'),g7:cls('7TH GRADE','Life Science'),
+  rot:()=>{lockers(112,62,100,48);lockers(350,62,100,48);board(230,66,100,32,'ROTATION','A ◄  ► B');C(165,86,15,15,'#14231c');T('▲',280,262,GM,'30px Courier New');T('▲',280,310,GL,'44px Courier New');R(150,216,260,4,'rgba(232,212,77,.3)')},
+  main:()=>{R(200,64,160,46,'#07121c');S(200,64,160,46,GM);R(280,64,1,46,GM);C(335,80,7,7,'#9ab');R(270,92,20,2,'#888');R(366,70,28,14,'#300');T('EXIT',380,81,'#e55','bold 10px Courier New');R(120,70,60,36,'#10201a');S(120,70,60,36,GM);T('OFFICE',150,92,GM,'10px Courier New');R(380,250,110,5,GM);R(380,255,110,22,'#14231c');R(220,300,120,12,'#101e18')},
+  ucommons:()=>{T('DISCOVERY',280,88,GT,'bold 18px Courier New');S(125,68,55,40,GM);S(400,68,55,40,GM);for(let x=0;x<560;x+=20)R(x,236,2,40,GM);R(0,234,560,3,GM);R(100,290,70,20,'#14281f');R(390,290,70,20,'#14281f');CS(280,305,80,12,GM)},
+  bcommons:()=>{R(128,64,36,48,'#16301f');S(128,64,36,48,GM);R(134,72,24,20,'rgba(185,232,201,.2)');T('STUDY',290,88,GT,'bold 14px Courier New');table(200,250,90);table(340,250,90);R(440,236,10,22,GD);C(445,232,15,12,'#1d4a35')},
+  imc:()=>{shelf(122,62,100,50);shelf(338,62,108,50);T('IMC',280,92,GM,'bold 22px Courier New');[100,250,400].forEach(x=>{table(x,250,80);R(x+30,236,20,14,'#0a0f0d');S(x+30,236,20,14,GM)});R(230,296,100,16,'#14231c')},
+  vent:duct(0),ventL:duct(1)
+};
+
+// ---- Camera feed ----
+const cv=$('feed'),ctx=cv.getContext('2d');
+let flick=0,t=0,doors=[];
+function render(){
+  if(!ROOMS[cur]){const k=CH===2?'h_lobby':'commons';cur=ROOMS[k]?k:Object.keys(ROOMS)[0];floor=ROOMS[cur].f;go(cur)}
+  t++;
+  const W=cv.width,H=cv.height,r=ROOMS[cur];
+  ctx.fillStyle='#0b1410';ctx.fillRect(0,0,W,H);
+  // back wall, floor, perspective
+  const bx=110,by=60,bw=W-220,bh=150;
+  ctx.fillStyle='#10201a';ctx.fillRect(bx,by,bw,bh);
+  ctx.fillStyle='#0a1511';
+  ctx.beginPath();ctx.moveTo(0,H);ctx.lineTo(bx,by+bh);ctx.lineTo(bx+bw,by+bh);ctx.lineTo(W,H);ctx.fill();
+  ctx.strokeStyle='#1c3a2d';ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let i=0;i<=8;i++){const x=i/8;ctx.moveTo(bx+bw*x,by+bh);ctx.lineTo(W*x,H)}
+  for(let i=1;i<5;i++){const y=by+bh+(H-by-bh)*(i/5)**1.6;ctx.moveTo(0,y);ctx.lineTo(W,y)}
+  ctx.stroke();
+  ctx.strokeRect(bx,by,bw,bh);
+  if(SCENE[cur])SCENE[cur]();
+  // doorways for each connection
+  const nb=neighbors(cur);doors=[];
+  const gap=bw/(nb.length);
+  ctx.font='11px Courier New';ctx.textAlign='center';
+  nb.forEach((n,i)=>{
+    const dw=Math.min(54,gap-10),dx=bx+gap*i+(gap-dw)/2,dy=by+bh-85;
+    ctx.fillStyle='rgba(5,10,8,.5)';ctx.fillRect(dx,dy,dw,85);
+    ctx.strokeStyle='#2d5a45';ctx.strokeRect(dx,dy,dw,85);
+    ctx.fillStyle='#5d8a70';
+    const label=ROOMS[n].short||ROOMS[n].name;
+    ctx.fillText(label.length>10?label.split(' ')[0]:label,dx+dw/2,dy-6-(nb.length>4&&i%2?12:0));
+    doors.push({id:n,x:dx,y:dy,w:dw,h:85});
+  });
+  if(game&&!game.over)game.en.filter(e=>!e.off&&e.route[e.i]===cur).forEach((e,k)=>{const fx=W/2+20-k*70;figure(ctx,fx,300,1.3,e.glitch?glitch(e.name):e.name,e.glitch?'#e33':e.eye,e.eyes);if(e.crippled){ctx.strokeStyle='#6a8a78';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(fx-30,300-70*1.3);ctx.lineTo(fx-46,300);ctx.stroke();ctx.lineWidth=1}});
+  if(game&&game.leo&&game.leo.room===cur&&Math.random()<.65)shade(ctx,game.leo.x,300,1.3);
+  // room title on wall
+  ctx.fillStyle='#2d5a45';ctx.font='bold 16px Courier New';
+  ctx.fillText(r.name.toUpperCase(),W/2,by-22);
+  // noise
+  const n=flick>0?900:140;
+  for(let i=0;i<n;i++){
+    ctx.fillStyle=`rgba(180,255,200,${Math.random()*.25})`;
+    ctx.fillRect(Math.random()*W,Math.random()*H,2,1+Math.random()*2);
+  }
+  if(flick>0){ctx.fillStyle=`rgba(0,0,0,${flick/20})`;ctx.fillRect(0,0,W,H);flick--}
+  // scanline & vignette
+  const sy=(t*2)%H;ctx.fillStyle='rgba(180,255,200,.05)';ctx.fillRect(0,sy,W,18);
+  ctx.fillStyle='rgba(90,140,110,.08)';ctx.fillRect(0,0,W,H);
+  const g=ctx.createRadialGradient(W/2,H/2,H/3,W/2,H/2,W/1.6);
+  g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#b9e8c9';ctx.textAlign='left';ctx.font='12px Courier New';
+  ctx.fillText(`CAM ${r.n}`,12,22);
+  ctx.fillStyle='#d33';ctx.fillText('● REC',W-62,22);
+  {const gn=vnow();if(game&&!game.over&&game.alarmUntil>gn&&Math.floor(Date.now()/250)%2){ctx.fillStyle='rgba(180,20,20,.8)';ctx.fillRect(0,34,W,26);T('⚠ AUSTIN’S ALARM — SOMEONE’S AT '+(CH===2?'YOUR DOOR':'7TH GRADE'),W/2,52,'#fff','bold 13px Courier New');ctx.strokeStyle='#d33';ctx.lineWidth=4;ctx.strokeRect(2,2,W-4,H-4)}}
+  requestAnimationFrame(render);
+}
+cv.addEventListener('click',e=>{
+  const b=cv.getBoundingClientRect(),sx=cv.width/b.width;
+  const x=(e.clientX-b.left)*sx,y=(e.clientY-b.top)*sx;
+  const d=doors.find(d=>x>=d.x&&x<=d.x+d.w&&y>=d.y&&y<=d.y+d.h);
+  if(d)go(d.id);
+});
+
+// ---- Clock (12 AM to 6 AM over a placeholder timer) ----
+let start=0;
+setInterval(()=>{const h=Math.floor((vnow()-start)/45000)%6;$('clock').textContent=(h===0?12:h)+':00 AM'},1000);
+
+// ---- Office view (Social Studies) ----
+const oc=$('office'),ox=oc.getContext('2d');
+let pan=0,target=0,mode='office',flickT=0;
+function setMode(m){
+  mode=m;
+  $('office').style.display=m==='office'?'block':'none';
+  $('feed').style.display=m==='cam'?'block':'none';
+  $('exits').style.display=m==='cam'?'block':'none';
+  $('offNote').style.display=m==='office'?'block':'none';
+  $('tO').classList.toggle('on',m==='office');$('tC').classList.toggle('on',m==='cam');
+  $('camName').textContent=m==='office'?'SOCIAL STUDIES — YOUR DESK':`CAM ${ROOMS[cur].n} — ${ROOMS[cur].name.toUpperCase()}`;
+}
+$('tO').onclick=()=>setMode('office');$('tC').onclick=()=>setMode('cam');
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a')target=-1;
+  if(e.key==='ArrowRight'||e.key==='d')target=1;
+  if(e.key==='ArrowDown'||e.key==='s')target=0;
+  if(e.code==='Space'){e.preventDefault();setMode(mode==='office'?'cam':'office')}
+});
+oc.addEventListener('pointermove',e=>{const b=oc.getBoundingClientRect();target=Math.max(-1,Math.min(1,((e.clientX-b.left)/b.width-.5)*2.6))});
+oc.addEventListener('pointerdown',e=>{
+  const b=oc.getBoundingClientRect(),s=oc.width/b.width,x=(e.clientX-b.left)*s,y=(e.clientY-b.top)*s;
+  if(y>oc.height-95&&Math.abs(x-oc.width/2)<75)setMode('cam');
+  else if(x+offCx>=30&&x+offCx<=140&&y>50&&y<232)toggleDoor();
+  else if(x+offCx>=760&&x+offCx<=860&&y>150&&y<220)toggleVent();
+});
+function drawOffice(){
+  if(CH===2)return drawParisOffice();
+  const W=oc.width,H=oc.height,VW=900;
+  pan+=(target-pan)*.08;
+  const cx=(VW-W)/2*(1+pan);offCx=cx;
+  ox.setTransform(1,0,0,1,0,0);
+  ox.fillStyle='#050807';ox.fillRect(0,0,W,H);
+  ox.translate(-cx,0);
+  ox.fillStyle='#0f1a16';ox.fillRect(0,0,VW,230);
+  ox.fillStyle='#0a110e';ox.fillRect(0,230,VW,110);
+  ox.strokeStyle='#15281f';ox.lineWidth=1;ox.beginPath();
+  for(let i=0;i<=18;i++){const x=i*50;ox.moveTo(x,230);ox.lineTo(VW/2+(x-VW/2)*1.8,H)}
+  ox.stroke();
+  // whiteboard + clock
+  ox.fillStyle='#1b2b24';ox.fillRect(320,40,260,90);ox.strokeStyle='#2d5a45';ox.strokeRect(320,40,260,90);
+  ox.textAlign='center';ox.fillStyle='#4e8a6c';ox.font='bold 15px Courier New';ox.fillText('SOCIAL STUDIES',450,68);
+  ox.font='11px Courier New';ox.fillStyle='#3a6a52';ox.fillText('Unit 4: Ancient Civilizations',450,92);ox.fillText('Quiz on Friday',450,110);
+  ox.beginPath();ox.arc(250,70,24,0,7);ox.fillStyle='#14231c';ox.fill();ox.stroke();
+  ox.fillStyle='#4e8a6c';ox.font='9px Courier New';ox.fillText($('clock').textContent.replace(' ',''),250,73);
+  ox.fillStyle='#16261f';ox.fillRect(640,50,70,90);ox.strokeRect(640,50,70,90);
+  ox.fillStyle='#2d5a45';ox.font='9px Courier New';ox.fillText('TIMELINE',675,66);
+  // door to 7th grade (left)
+  ox.fillStyle='#233a2f';ox.fillRect(30,50,110,182);
+  const gl=ox.createLinearGradient(40,60,130,60);gl.addColorStop(0,'#08100c');gl.addColorStop(1,'#1d3a2c');
+  ox.fillStyle=gl;ox.fillRect(40,60,90,172);
+  ox.fillStyle='rgba(120,200,150,.07)';ox.beginPath();ox.moveTo(40,232);ox.lineTo(130,232);ox.lineTo(230,H);ox.lineTo(0,H);ox.fill();
+  ox.fillStyle='#5d8a70';ox.font='10px Courier New';ox.fillText('◄ 7TH GRADE',85,40);
+  if(game&&!game.over&&!doorClosed&&game.en.some(e=>!e.off&&!e.hide&&e.route[e.i]==='g7'))figure(ox,85,232,.95,game.en.filter(e=>!e.off&&!e.hide&&e.route[e.i]==='g7').map(e=>e.name).join('/'));
+  if(doorClosed){ox.fillStyle='#1c2f27';ox.fillRect(40,60,90,172);ox.strokeStyle='#2d5a45';ox.strokeRect(40,60,90,172);ox.fillStyle='#08110d';ox.fillRect(62,80,40,38);ox.fillStyle='#8aa';ox.fillRect(112,150,6,12);if(game&&game.dura<50){ox.strokeStyle='#8aa';ox.beginPath();ox.moveTo(50,100);ox.lineTo(80,140);ox.lineTo(64,176);ox.stroke()}}
+  // vent (right)
+  ox.fillStyle='#16241d';ox.fillRect(760,150,100,70);ox.strokeStyle='#2d5a45';ox.strokeRect(760,150,100,70);
+  ox.fillStyle='#030605';for(let i=0;i<6;i++)ox.fillRect(768,158+i*10,84,4);
+  ox.fillStyle='#5d8a70';ox.fillText('VENT ►',810,140);
+  if(ventClosed){ox.fillStyle='#2a3f35';ox.fillRect(760,150,100,70);ox.strokeStyle='#5d8a70';ox.strokeRect(760,150,100,70);ox.fillStyle='#8aa';[[768,158],[848,158],[768,208],[848,208]].forEach(p=>ox.fillRect(p[0],p[1],4,4))}
+  // student desks
+  [[205,.6],[240,.85]].forEach(([y,s])=>{
+    for(let x=190;x<=720;x+=(110*s+30)){
+      ox.fillStyle='#14231c';ox.fillRect(x,y,56*s,9*s);
+      ox.fillStyle='#0b1510';ox.fillRect(x+4*s,y+9*s,3*s,22*s);ox.fillRect(x+49*s,y+9*s,3*s,22*s);
+    }
+  });
+  // your desk + monitor (screen space)
+  ox.setTransform(1,0,0,1,0,0);
+  ox.fillStyle='#070c0a';ox.fillRect(0,H-46,W,46);
+  ox.fillStyle='#0d1713';ox.fillRect(0,H-50,W,5);
+  ox.fillStyle='#0a0f0d';ox.fillRect(W/2-70,H-92,140,50);ox.strokeStyle='#1f3a2e';ox.strokeRect(W/2-70,H-92,140,50);
+  ox.fillStyle=`rgba(185,232,201,${.5+.2*Math.sin(Date.now()/400)})`;ox.font='11px Courier New';ox.textAlign='center';
+  ox.fillText('CAMERAS [SPACE]',W/2,H-62);
+  // atmosphere
+  for(let i=0;i<90;i++){ox.fillStyle=`rgba(180,255,200,${Math.random()*.08})`;ox.fillRect(Math.random()*W,Math.random()*H,2,1)}
+  if(Math.random()<.004)flickT=6;
+  if(flickT>0){ox.fillStyle='rgba(0,0,0,.35)';ox.fillRect(0,0,W,H);flickT--}
+  const g=ox.createRadialGradient(W/2,H/2,H/3,W/2,H/2,W/1.5);
+  g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.75)');
+  ox.fillStyle=g;ox.fillRect(0,0,W,H);
+  ox.fillStyle='#5d8a70';ox.font='18px Courier New';
+  if(pan>-.9){ox.textAlign='left';ox.fillText('◄',10,H/2)}
+  if(pan<.9){ox.textAlign='right';ox.fillText('►',W-10,H/2)}
+}
+function officeLoop(){if(mode==='office')drawOffice();requestAnimationFrame(officeLoop)}
+
+// ---- Title screen & saves ----
+const SAVE='tnad_save';
+const getSave=()=>{try{return JSON.parse(localStorage.getItem(SAVE))}catch(e){return null}};
+const putSave=n=>{try{localStorage.setItem(SAVE,JSON.stringify({night:n}))}catch(e){}};
+let night=1;
+function show(id){['tMenu','tCred','tIntro','tPro','tEnd','tDev','tSet','tCh'].forEach(i=>$(i).hidden=i!==id)}
+function showTitle(){
+  $('title').style.display='flex';show('tMenu');bgStop();$('ch2').hidden=true;
+  const s=getSave();$('bCont').disabled=!s;
+  $('bCont').textContent=s?`Continue \u2014 Night ${s.night}`:'Continue';
+}
+function begin(n){
+  if(n===14){ch2Open();return}
+  if(n===-1){startParisNight();return}
+  if(n===-2){useMap(1);C2.day++;C2.acts=2;c2save();if(C2.day>=DAYS.length){playParisEnd(false);return}$('title').style.display='none';$('c2res').hidden=true;$('ch2').hidden=false;c2render();return}
+  if(CH===2)useMap(1);
+  if(n===5&&!seen5){seen5=true;playScene(N5,()=>begin(5));return}if(n===7&&!seen7){seen7=true;playScene(N7,()=>begin(7));return}if(n===9&&!seen9){seen9=true;playScene(N9,()=>begin(9));return}if(n===10&&!seen10){seen10=true;playScene(N10,()=>begin(10));return}night=n;if(!devMode)putSave(n);if(n===13&&!seen13){seen13=true;playScene(N13,()=>begin(13));return}if(n>13){$('endT').textContent='Night '+n;$('endS').textContent='Not built yet. Coming soon.';$('bRetry').textContent='Replay Night 1';retryN=1;show('tEnd');return}$('introN').textContent='Night '+n;show('tIntro');
+  setTimeout(()=>{$('title').style.display='none';setSpeed(1);start=vnow();pan=0;target=0;startNight(n);setMode('roster');bgStart()},2600);
+}
+$('bNew').onclick=pro;
+$('bCont').onclick=()=>{const s=getSave();devMode=false;if(s)begin(s.night)};
+$('bCred').onclick=()=>show('tCred');
+$('bBack').onclick=()=>show('tMenu');
+$('bMenu').onclick=showTitle;
+addEventListener('keydown',e=>{if(e.key==='Escape')showTitle()});
+
+// ---- Prologue, Absence Roster & Night 1 ----
+let ROUTE=['commons','c1','stair2','bcommons','g7','office'];
+const rand=(a,b)=>a+Math.random()*(b-a);
+let game=null,doorClosed=false,offCx=0,retryN=1,pi=0;
+function figure(c,x,y,s,nm,col,ne){
+  c.save();c.fillStyle='#030605';c.strokeStyle='#2d5a45';c.lineWidth=1;
+  c.beginPath();c.arc(x,y-92*s,14*s,0,7);c.fill();c.stroke();
+  c.fillRect(x-16*s,y-78*s,32*s,48*s);c.fillRect(x-14*s,y-30*s,10*s,30*s);c.fillRect(x+4*s,y-30*s,10*s,30*s);
+  c.fillRect(x-24*s,y-76*s,8*s,40*s);c.fillRect(x+16*s,y-76*s,8*s,40*s);c.fillRect(x-22*s,y-74*s,6*s,34*s);
+  c.fillStyle=col||'#e8d44d';if(ne===undefined||ne>=1)c.fillRect(x-8*s,y-96*s,5*s,3*s);if(ne===undefined||ne>=2)c.fillRect(x+3*s,y-96*s,5*s,3*s);
+  if(nm){c.fillStyle='#b9e8c9';c.font='10px Courier New';c.textAlign='center';c.fillText(nm.toUpperCase(),x,y+14)}
+  c.restore();
+}
+function updDoor(){$('bDoor').textContent=(doorClosed?'Open':'Close')+' '+(CH===2?'room':'7th Grade')+' door (E)'+(doorClosed?'':' [-5]')}
+function toggleDoor(){
+  if(!game||game.over)return;
+  if(game.doorOff){toast('The door controls are jammed. Disabled for the night.');return}
+  if(!doorClosed){
+    if(game.broken||game.dura<5){toast('The door is too damaged to close.');return}
+    game.dura-=5;
+  }
+  doorClosed=!doorClosed;updDoor();
+}
+$('bDoor').onclick=toggleDoor;
+addEventListener('keydown',e=>{if(e.key==='e'||e.key==='E')toggleDoor()});
+
+// the hacked database: facts are implied by records, never stated outright
+let rows='';for(let i=2;i<=13;i++)rows+=`<div class="rec lk">REC ${String(i).padStart(3,'0')} — <span class="rd">XXXXXXXX</span> · LOCKED (clearance Lv.2)</div>`;
+$('roster').innerHTML=`<div class="rec" style="color:var(--acc)">DISCOVERY MS · STUDENT INFORMATION SYSTEM<br>session: <span class="rd">admin_override</span> · table: attendance_absence_roster<br>Open the Office or Cameras tab when you’re ready.</div>
+<div class="rec"><b>REC 001</b> — ALAN <span class="rd">XXXXXXXX</span> · Gr 7 · Locker 0712<br>
+Status: ABSENT (unexcused) · 9 days running<br>Contact attempts: 14 · answered: 0<br>Pace tag: <b>DAWDLER</b><br><br>
+Badge-reader log (in order of scan):<br>
+&nbsp;1 · Commons, east reader<br>&nbsp;2 · Corridor 1<br>&nbsp;3 · Stairway 2 (up)<br>&nbsp;4 · Back Commons<br>&nbsp;5 · 7th Gr hall door<br>&nbsp;6 · Social Studies, seat 12 <i>(usual class)</i><br><br>
+Hall monitor note: “Never opens a shut door. Stands there a while, then wanders back the way he came.”<br>
+Counselor note: “Withdrawn. Repeats the same path. Doesn’t answer to his name.”<br>
+Parent note: “He left for school.”</div>${rows}`;
+
+// prologue
+const PRO=['You are a student at Discovery.','Then, one by one, your friends stopped showing up.\nEmpty seats. Unread messages. Day after day.','Then the school closed for a few days.\n“Maintenance,” the email said.','You don’t believe it.','You’re good with computers. Very good.\nTonight, the school’s database doesn’t stay locked.','Thirteen nights inside Discovery.\nFind out what happened to your friends.\n\nSurvive(?)'];
+function proShow(){const t=$('proTxt');t.textContent=SCN[pi];$('leoShade').hidden=!(SCN===N13&&pi>=5);t.style.transition='none';t.style.opacity=0;requestAnimationFrame(()=>requestAnimationFrame(()=>{t.style.transition='opacity 1s';t.style.opacity=1}))}
+function pro(){devMode=false;playScene(PRO,()=>begin(1))}
+$('tPro').onclick=()=>{pi++;if(pi>=SCN.length)scnDone();else proShow()};
+$('bSkip').onclick=e=>{e.stopPropagation();scnDone()};
+
+// night logic
+const ENEMY={
+  alan:{name:'Alan',route:['commons','c1','stair2','bcommons','g7','office'],wait:[18,29],pause:8000},
+  daniel:{name:'Daniel',route:['commons','c2','rot','stair3','g6','ucommons','g7','office'],wait:[12,20],pause:6000},
+  nathan:{name:'Nathan',route:['cafe','commons','c1','rot','stair3','g6','bcommons','g7','office'],wait:[15,24],pause:7000,pair:true},
+  noah:{name:'Noah',route:['cafe','commons','c1','grade8','stair4','g7','office'],wait:[15,24],pause:7000,pair:true},
+  jonathan:{name:'Jonathan',route:['main','c2','commons','hall','orch','hall','commons','stair1','ucommons','g7','office'],fastTo:4,fastWait:[6,10],wait:[20,30],pause:9000,respawn:4},
+  tanqi:{name:'Tanqi',route:['band','hall','gym','commons','stair1','ucommons','g7','office'],wait:[4,8],pause:4000,slowWatch:true,glitch:true,buffable:true},
+  kentaro:{name:'Kentaro',route:['main','c2','rot','c1','grade8','stair4','g7','office'],wait:[12,20],pause:6000,hide:true},
+  ayaansh:{name:'Ayaansh',route:['orch','hall','commons','c1','grade8','stair4','g7','office'],wait:[3,6],pause:2500,puppet:true,ignoreDoor:true,eye:'#6cf'},
+  amber:{name:'Amber',route:['well','hall','orch','hall','band'],wait:[20,30],pause:6000,stopAtEnd:true,buffs:true,stareReset:true,resetMsg:'Amber lost track of where she was going.',eye:'#f9c'},
+  irene:{name:'Irene',route:['well','hall','commons','ventL','vent','office'],wait:[10,16],pause:6000,eye:'#9f9'},
+  sonya:{name:'Sonya',route:[],routes:[
+    ['well','hall','commons','stair1','ucommons','g7','office'],
+    ['well','hall','commons','c1','grade8','stair4','g7','office'],
+    ['well','hall','commons','c1','stair2','bcommons','g7','office'],
+    ['well','hall','commons','ventL','vent','office']],wait:[9,15],pause:5000,eye:'#f33'},
+  caller:{name:'The Caller',route:[],routes:[['h_street','h_lobby','h_stairG','h_stair4','g7','office'],['h_street','h_lobby','h_kitchen','h_service','h_svc4','g7','office']],wait:[14,22],pause:6000,glitch:true,eye:'#9cf'},
+  driver:{name:'The Driver',route:[],routes:[['h_lot1','h_lot','h_elev','h_lobby','h_stairG','h_stair4','g7','office'],['h_lot1','h_lot','h_elev','h_lobby','h_kitchen','h_service','h_svc4','g7','office']],wait:[11,18],pause:5500,eye:'#fa6'},
+  agent:{name:'The Agent',route:['h_roof','h_zip','h_laundry','g7','office'],wait:[18,28],pause:7000,noAlarm:true,eye:'#fff'},
+  child:{name:'The Troublemaker Child',route:['h_desk','h_lobby','h_stairG','h_stair4','g7','h_laundry'],skip:5,stopAtEnd:true,wait:[26,40],pause:8000,stareReset:true,breaksDoor:true,resetMsg:'The kid got bored and wandered back to the front desk.',eye:'#ff6'},
+  crippled:{name:'The Crippled One',route:['h_street','h_lobby','h_stairG','h_stair4','g7','office'],crippled:true,eyes:0,sprint:false,eyeWait:[70,90],wait:[1.5,3],pause:1500,eye:'#ffe38a'}
+};
+const NIGHTS={1:['alan'],2:['alan','daniel'],3:['alan','daniel','nathan','noah'],4:['alan','daniel','nathan','noah','jonathan'],5:['tanqi'],6:['alan','daniel','nathan','noah','jonathan','tanqi'],7:['alan','daniel','nathan','noah','jonathan','tanqi'],8:['alan','daniel','nathan','noah','jonathan','tanqi','kentaro'],9:['alan','daniel','tanqi','kentaro','ayaansh'],10:['tanqi','amber','irene','sonya'],11:['alan','daniel','tanqi','amber','irene','sonya'],12:['alan','daniel','nathan','noah','tanqi','amber','irene','sonya'],13:['alan','daniel','nathan','noah','jonathan','tanqi','kentaro','ayaansh','amber','irene','sonya'],101:['caller'],102:['caller','driver'],103:['caller','driver','agent'],104:['caller','driver','agent','child'],105:['caller','driver','agent','child','crippled']};
+const ROSTER0=$('roster').innerHTML;
+const DANIEL=`<div class="rec"><b>REC 002</b> — DANIEL <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0814<br>
+Status: ABSENT (unexcused) · 10 days running<br>Contact attempts: 11 · answered: 0<br>Pace tag: <b>STEADY</b><br><br>
+Badge-reader log (in order of scan):<br>
+&nbsp;1 · Commons, north reader<br>&nbsp;2 · Corridor 2<br>&nbsp;3 · Rotation Hallway<br>&nbsp;4 · Stairway 3 (up)<br>&nbsp;5 · 6th Gr<br>&nbsp;6 · Upper Commons<br>&nbsp;7 · 7th Gr hall door<br>&nbsp;8 · Social Studies, seat 9 <i>(make-up quiz)</i><br><br>
+Hall monitor note: “Tries the handle every time. If it won’t give, he turns around and starts the loop again.”<br>
+Counselor note: “Quiet. Walks the same loop every day.”<br>
+Attendance clerk: “Late. Always late, but never misses a period.”</div>`;
+const NATHAN=`<div class="rec"><b>REC 003</b> — NATHAN <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0821<br>
+Status: ABSENT (unexcused) · 8 days running<br>Contact attempts: 9 · answered: 0<br>Pace tag: <b>UNHURRIED</b><br><br>
+Badge-reader log (in order of scan):<br>
+&nbsp;1 · Cafeteria<br>&nbsp;2 · Commons<br>&nbsp;3 · Corridor 1<br>&nbsp;4 · Rotation Hallway<br>&nbsp;5 · Stairway 3 (up)<br>&nbsp;6 · 6th Gr<br>&nbsp;7 · Back Commons<br>&nbsp;8 · 7th Gr hall door<br>&nbsp;9 · Social Studies, seat 15 <i>(usual class)</i><br><br>
+Lunch aide: “Never without Noah. They walk in together and only split up past Corridor 1.”<br>
+Custodian log: “Rice bin in the cafeteria keeps coming up short. Spilled rice found in the halls twice this month.”<br>
+Hall monitor note: “Won’t touch a shut door.”</div>`;
+const NOAH=`<div class="rec"><b>REC 004</b> — NOAH <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0822<br>
+Status: ABSENT (unexcused) · 8 days running<br>Contact attempts: 9 · answered: 0<br>Pace tag: <b>UNHURRIED</b><br><br>
+Badge-reader log (in order of scan):<br>
+&nbsp;1 · Cafeteria<br>&nbsp;2 · Commons<br>&nbsp;3 · Corridor 1<br>&nbsp;4 · 8th Gr<br>&nbsp;5 · Stairway 4 (up)<br>&nbsp;6 · 7th Gr hall door<br>&nbsp;7 · Social Studies, seat 16 <i>(usual class)</i><br><br>
+Lunch aide: “Those two stop and pick up every single grain if they spill any. Every grain. Together.”<br>
+Hall monitor note: “Won’t touch a shut door.”</div>`;
+const JONATHAN=`<div class="rec"><b>REC 005</b> — JONATHAN <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0830<br>
+Status: ABSENT (unexcused) · 11 days running<br>Contact attempts: 16 · answered: 0<br>Pace tag: <b>HURRIED, then UNHURRIED</b><br><br>
+Badge-reader log (in order of scan):<br>
+&nbsp;1 · Main Doors / Office<br>&nbsp;2 · Corridor 2<br>&nbsp;3 · Commons<br>&nbsp;4 · Musical Hallway<br>&nbsp;5 · Orchestra<br>&nbsp;6 · Musical Hallway<br>&nbsp;7 · Commons<br>&nbsp;8 · Stairway 1 (up)<br>&nbsp;9 · Upper Commons<br>&nbsp;10 · 7th Gr hall door<br>&nbsp;11 · Social Studies, seat 3 <i>(usual class)</i><br><br>
+Orchestra teacher: “Rushes in for his violin case before anything else. Once he has it he’s in no hurry. The bow looks different lately.”<br>
+Instrument log: “Violin checked out. Never returned.”<br>
+Hall monitor note: “Won’t touch a shut door. Heads back to the orchestra room to wait.”</div>`;
+const TANQI=`<div class="rec"><b>REC 006</b> — TANQI <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0805<br>
+Status: ABSENT (unexcused) · 12 days running<br>Contact attempts: 21 · answered: 0<br>Pace tag: <b>SPRINTER</b> · ID photo: <b>FILE CORRUPTED (0 bytes)</b><br><br>
+Badge-reader log (in order of scan):<br>
+&nbsp;1 · Band Room<br>&nbsp;2 · Musical Hallway<br>&nbsp;3 · Gym<br>&nbsp;4 · Commons<br>&nbsp;5 · Stairway 1 (up)<br>&nbsp;6 · Upper Commons<br>&nbsp;7 · 7th Gr hall door<br>&nbsp;8 · Social Studies, seat 7 <i>(usual class)</i><br><br>
+Band director: “Fastest kid in the building. Lately he freezes up if he thinks someone’s looking at him.”<br>
+Counselor transcript: “‘change’ … ‘evil’ … ‘death’ … [FLAGGED — name withheld].”<br>
+Hall monitor note: “Won’t touch a shut door.”</div>`;
+const AUSTINREC=`<div class="rec"><b>REC 007</b> — AUSTIN <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0840<br>
+Status: <b>ATTENDANCE ANOMALY</b><br>Badge scans recorded during the closure. No staff on site.<br>Recurring reader: Commons, 7th Gr hall door (nightly)<br><br>
+Hall monitor note: “He’s the only one who still answers to his name.”</div>`;
+const KENTARO=`<div class="rec"><b>REC 008</b> — KENTARO <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0850<br>
+Status: ABSENT (unexcused) · 12 days running<br>Contact attempts: 13 · answered: 0<br>Pace tag: <b>STEADY</b><br><br>
+Badge-reader log (in order of scan):<br>
+&nbsp;1 · Main Doors / Office<br>&nbsp;2 · Corridor 2<br>&nbsp;3 · Rotation Hallway<br>&nbsp;4 · Corridor 1<br>&nbsp;5 · 8th Gr<br>&nbsp;6 · Stairway 4 (up)<br>&nbsp;7 · 7th Gr hall door<br>&nbsp;8 · Social Studies, seat 11 <i>(usual class)</i><br><br>
+Substitute teacher: “I never saw him walk in. I looked up and his chair was already pulled out.”<br>
+Security log: “Shows up on hallway cameras. Never once seen standing in a lit doorway.”<br>
+Hall monitor note: “Won’t touch a shut door.”</div>`;
+const AYAANSH=`<div class="rec"><b>REC 009</b> — AYAANSH <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0866<br>
+Status: ABSENT (unexcused) · 13 days running<br>Contact attempts: 8 · answered: 0<br>Pace tag: <b>STATIONARY</b> (see IT note)<br><br>
+Badge-reader log (in order of scan):<br>
+&nbsp;1 · Orchestra<br>&nbsp;2 · Musical Hallway<br>&nbsp;3 · Commons<br>&nbsp;4 · Corridor 1<br>&nbsp;5 · 8th Gr<br>&nbsp;6 · Stairway 4 (up)<br>&nbsp;7 · 7th Gr hall door<br>&nbsp;8 · Social Studies, seat 2 <i>(usual class)</i><br><br>
+IT ticket: “His tutoring assistant runs on prepaid credits and shuts off when the balance hits zero. Last time that happened he left the room faster than I’ve ever seen anyone move.”<br>
+Orchestra teacher: “Sits at the back stand, perfectly still, as long as that thing is topped up.”<br>
+Hall monitor note: “Doors have never slowed him down.”</div>`;
+const AMBER=`<div class="rec"><b>REC 010</b> — AMBER <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0901<br>
+Status: ABSENT (unexcused) · 13 days running<br>Pace tag: <b>SLOW</b><br><br>
+Badge-reader log (in order of scan):<br>
+&nbsp;1 · Wellness Corner<br>&nbsp;2 · Musical Hallway<br>&nbsp;3 · Orchestra<br>&nbsp;4 · Musical Hallway<br>&nbsp;5 · Band Room <i>(last scan, every day)</i><br><br>
+Band director: “Every time she finishes her walk to my room, Tanqi runs harder. Nobody can tell me why.”<br>
+Counselor: “Rattles easily when she knows she’s being watched. Loses her place and starts over.”</div>`;
+const IRENE=`<div class="rec"><b>REC 011</b> — IRENE <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0912<br>
+Status: ABSENT (unexcused) · 13 days running<br>Pace tag: <b>BRISK</b><br><br>
+Badge-reader log (in order of scan):<br>
+&nbsp;1 · Wellness Corner<br>&nbsp;2 · Musical Hallway<br>&nbsp;3 · Commons<br>&nbsp;4 · Ventilation (lower)<br>&nbsp;5 · Ventilation (upper)<br>&nbsp;6 · Social Studies, seat 6 <i>(usual class)</i><br><br>
+Nurse: “Complains of stale air in every room. Spends her breaks in the vents.”<br>
+Maintenance memo: “Do not seal the building’s vents for long. The air thins out fast.”</div>`;
+const SONYA=`<div class="rec"><b>REC 012</b> — SONYA <span class="rd">XXXXXXXX</span> · Gr 8 · Locker 0923<br>
+Status: ABSENT (unexcused) · 13 days running<br>Pace tag: <b>ERRATIC</b><br><br>
+Badge-reader logs (four different days on file):<br>
+&nbsp;A · Wellness, Musical, Commons, Stairway 1, Upper Commons, 7th Gr door, Social Studies<br>
+&nbsp;B · Wellness, Musical, Commons, Corridor 1, 8th Gr, Stairway 4, 7th Gr door, Social Studies<br>
+&nbsp;C · Wellness, Musical, Commons, Corridor 1, Stairway 2, Back Commons, 7th Gr door, Social Studies<br>
+&nbsp;D · Wellness, Musical, Commons, Ventilation (lower), Ventilation (upper), Social Studies<br><br>
+Counselor: “Hasn’t been herself. Never takes the same way twice.”</div>`;
+const rxRec=i=>new RegExp('<div class="rec lk">REC '+String(i).padStart(3,'0')+'[\\s\\S]*?<\\/div>');
+function startNight(n){
+  const N=NIGHTS[n];
+  game={n,dura:100,broken:false,leoOn:n===13,leoNext:0,leo:null,credits:N.includes('ayaansh')?100:undefined,oxy:N.includes('irene')?100:undefined,released:false,austin:n>=7,alarmReady:0,alarmUntil:0,started:false,over:false,scare:false,name:'',en:N.map(k=>{const e={...ENEMY[k],i:0,next:Infinity};pick(e);return e})};
+  $('roster').innerHTML=CH===2?PARIS_ROSTER+(n>=102?PARIS_R2:'')+(n>=103?PARIS_R3:'')+(n>=104?PARIS_R4:'')+(n===105?PARIS_R5:''):(()=>{let h=ROSTER0;if(n>=2)h=h.replace(rxRec(2),DANIEL);if(n>=3)h=h.replace(rxRec(3),NATHAN).replace(rxRec(4),NOAH);if(n>=4)h=h.replace(rxRec(5),JONATHAN);if(n>=5)h=h.replace(rxRec(6),TANQI);if(n>=7)h=h.replace(rxRec(7),AUSTINREC);if(n>=8)h=h.replace(rxRec(8),KENTARO);if(n>=9)h=h.replace(rxRec(9),AYAANSH);if(n>=10)h=h.replace(rxRec(10),AMBER).replace(rxRec(11),IRENE).replace(rxRec(12),SONYA);return h})();
+  doorClosed=false;ventClosed=false;updDoor();updVent();
+}
+const sm0=setMode;
+setMode=m=>{
+  sm0(m);
+  $('roster').hidden=m!=='roster';$('tR').classList.toggle('on',m==='roster');
+  if(m==='roster')$('camName').textContent='SIS DATABASE — ACCESS: UNAUTHORIZED';
+  if(game&&!game.started&&m!=='roster'){game.started=true;start=vnow();game.en.forEach((e,k)=>e.next=start+25000+(e.pair?0:Math.min(k,3)*6000));game.leoNext=start+12000;}
+};
+$('tR').onclick=()=>setMode('roster');
+function endNight(win){
+  game.over=true;bgStop();if(CH===2)return endParis(win);
+  if(win){chimeSfx();if(!devMode)putSave(Math.min(13,game.n+1));$('endT').textContent='6:00 AM';const last=game.n>=13;$('endS').textContent=last?'Night 13 survived. To be continued.':'Night '+game.n+' survived.';$('bRetry').textContent=last?'Replay Night 13':'Next night';retryN=last?13:game.n+1;if(last)playEnding();else showEnd(0)}
+  else{$('endT').textContent='Caught';$('endS').textContent=game.cause||(game.name+' reached your desk.');$('bRetry').textContent='Retry';retryN=game.n;showEnd(600)}
+}
+function showEnd(d){setTimeout(()=>{$('title').style.display='flex';show('tEnd')},d)}
+$('bRetry').onclick=()=>begin(retryN);
+$('bEndMenu').onclick=showTitle;
+setInterval(()=>{
+  if(!game||game.over||!game.started||$('title').style.display==='flex')return;
+  const now=vnow();
+  if((now-start)/45000>=6)return endNight(true);
+  const dt=now-(game.lt||now);game.lt=now;
+  if(doorClosed){game.dura-=dt*.0002;if(game.dura<=0){game.dura=0;doorClosed=false;game.broken=true;updDoor();toast('The door broke open!')}}
+  else{game.dura=Math.min(100,game.dura+dt*.0006);if(game.broken&&game.dura>=15)game.broken=false}
+  if(game.credits!==undefined&&!game.released){game.credits=Math.max(0,game.credits-dt/450);if(game.credits<=0){game.released=true;const p=game.en.find(e=>e.puppet);if(p){p.wait=[3,6];p.pause=2500;p.next=now+2000}flick=16}}
+  if(game.oxy!==undefined){game.oxy=Math.min(100,Math.max(0,game.oxy+(ventClosed?-dt/300:dt/150)));if(game.oxy<=0){game.cause='You ran out of oxygen.';return endNight(false)}}
+  if(game.leoOn){
+    if(!game.leo&&now>=game.leoNext){const rs=Object.keys(ROOMS).filter(r=>!ROOMS[r].you);game.leo={room:rs[Math.floor(Math.random()*rs.length)],x:rand(170,400),until:now+rand(2000,4500)}}
+    else if(game.leo&&now>=game.leo.until){game.leo=null;game.leoNext=now+rand(6000,16000)}
+  }
+  for(const e of game.en){
+    if(e.off||e.done||(e.puppet&&!game.released))continue;
+    if(e.stareReset){if(mode==='cam'&&cur===e.route[e.i]&&e.i>0){e.stare=(e.stare||0)+dt;if(e.stare>=7000){e.i=0;pick(e);e.stare=0;e.next=now+rand(...e.wait)*1000;flick=14;toast(e.resetMsg||(e.name+' went back to the start.'));playFriend(e.name,.9);continue}}else e.stare=0}
+    if(e.slowWatch&&mode==='cam'&&cur===e.route[e.i])e.next+=dt*.75;
+    if(now<e.next)continue;
+    if(e.crippled&&!e.sprint){
+      e.eyes=(e.eyes||0)+1;
+      if(e.eyes>=2){e.sprint=true;e.next=now+1500;flick=18}else{e.next=now+rand(...e.eyeWait)*1000;flick=6}
+      continue;
+    }
+    if((e.route[e.i]==='g7'||e.route[e.i]==='vent')&&e.i>=(e.skip||0)){
+      if((e.route[e.i]==='vent'?ventClosed:doorClosed)&&!e.ignoreDoor){if(e.route[e.i]==='g7'){game.dura-=(e.name==='Jonathan'||e.name==='Tanqi')?10:3;if(game.dura<=0){game.dura=0;doorClosed=false;game.broken=true;updDoor();toast('The door broke open!')}}playFriend(e.name,.9);e.i=e.respawn||0;pick(e);e.next=now+rand(...e.wait)*1000;flick=14;if(e.crippled){e.eyes=0;e.sprint=false;e.next=now+rand(...e.eyeWait)*1000}}
+      else{game.name=e.name;return endNight(false)}
+    }else{
+      e.i++;flick=10;stepSfx(e);if(e.breaksDoor&&e.route[e.i]==='h_laundry'){game.doorOff=true;doorClosed=false;updDoor();toast('Someone pried the door controls open. Your door is disabled for the night.')}if(e.stopAtEnd&&e.i>=e.route.length-1){e.done=true;if(e.buffs){game.buff=true;toast('Amber reached the Band Room. Something about Tanqi just changed.')}}if(game.austin&&e.route[e.i]==='g7'&&!e.noAlarm&&now>=game.alarmReady){game.alarmUntil=now+6000;game.alarmReady=now+60000;alarmSfx()}
+      e.next=now+((e.route[e.i]==='g7'||e.route[e.i]==='vent')&&e.i>=(e.skip||0)?e.pause:rand(...(e.i<(e.fastTo||0)?e.fastWait:e.wait))*1000*(e.buffable&&game.buff?.55:1));
+      const p=e.pair&&e.i<=2?game.en.find(q=>q!==e&&q.pair&&!q.off&&q.i===e.i-1):null;
+      if(p){p.i=e.i;p.next=e.next}
+    }
+  }
+},500);
+
+// ---- Game speed (virtual clock) ----
+let speed=1,vt=0,lastT=Date.now();
+function vnow(){const n=Date.now();vt+=(n-lastT)*speed;lastT=n;return vt}
+function setSpeed(s){vnow();speed=s;$('bSpd').textContent='Speed '+s+'x'}
+$('bSpd').onclick=()=>setSpeed(speed===1?2:speed===2?4:1);
+
+// ---- Dev level select ----
+let devMode=false;
+for(let i=1;i<=13;i++){const b=document.createElement('button');b.textContent=i;if(i>13)b.style.opacity='.5';b.title=i>13?'Not built yet':'Night '+i;b.onclick=()=>{devMode=true;begin(i)};$('devGrid').appendChild(b)}
+$('bDev').onclick=()=>show('tDev');
+$('bDevBack').onclick=()=>show('tMenu');
+
+// ---- Rice Drop (Night 3) ----
+let tt=0;
+function toast(s){$('toast').textContent=s;clearTimeout(tt);tt=setTimeout(()=>{$('toast').textContent=''},6000)}
+function together(){
+  if(!game||game.over)return null;
+  const a=game.en.filter(e=>e.pair&&!e.off);if(a.length<2)return null;
+  const r=a[0].route[a[0].i];
+  return r===a[1].route[a[1].i]&&!['cafe','commons','office'].includes(r)?r:null;
+}
+function updRice(){const r=together();$('bRice').hidden=!(mode==='cam'&&r&&cur===r)}
+function rice(){
+  game.en.filter(e=>e.pair).forEach(e=>e.off=true);flick=16;
+  toast('Rice Drop! Nathan and Noah stopped to pick it all up. They\u2019re out for the night.');updRice();
+}
+$('bRice').onclick=rice;
+setInterval(()=>{updRice();updAustin();updCred();updOxy();updDura()},250);
+
+// ---- Cutscenes & glitch text ----
+let SCN=PRO,scnDone=()=>{},seen5=false;
+function playScene(l,d){SCN=l;scnDone=d;pi=0;show('tPro');proShow()}
+const glitch=s=>[...s].map(c=>Math.random()<.35?'#%&@?'[Math.floor(Math.random()*5)]:c).join('');
+const N5=[
+  'Before all this, Discovery was loud.',
+  'Lunch tables too small for everyone.\nBand practice leaking through the walls.\nFriends who always saved you a seat.',
+  'You remember Tanqi best.\nFastest kid in the building. Always late, somehow never behind.',
+  'Last week, you found him in the Commons after dark.\nHe looked just like himself, standing with his back to you.',
+  '“Tanqi?”',
+  'He turned around.\nHis face was wrong. Torn static, like a bad video file, flickering where his eyes should be.',
+  'He spoke in pieces, like a broken recording.\n\n“Change.”\n“Evil.”\n“Death.”',
+  'You understood those three.\nEveryone changes. Something in this school is evil. Something here is already dead.',
+  'Then, one more word.\n\n“Leo.”',
+  'You’d heard that name. Only a rumor, about a friend who died.\nNobody would ever tell you more.',
+  'The static spread across his whole body until nothing of Tanqi was left to recognize.',
+  'Tonight he’s in the halls, and he’s fast.\nMaybe he doesn’t like being looked at.'
+];
+
+// ---- Night 7: Austin ----
+let seen7=false;
+function updAustin(){
+  const el=$('austin');
+  if(!game||!game.austin||game.over){el.hidden=true;return}
+  vnow();const r=game.alarmReady-vt;
+  el.hidden=false;el.textContent='Austin\u2019s alarm: '+(r<=0?'READY':'recharging '+Math.ceil(r/1000)+'s');
+}
+const N7=[
+  'Night 7.\nYou almost missed the knock.',
+  'Someone was in the Commons.\nNot static. Not corrupted. Just a boy, shaking, one hand on the wall.\n\nAustin.',
+  '“It’s me. I’m still me.”\n“I’ve been staying quiet and staying moving. That’s how I’m still here.”',
+  '“What really happened?” you ask.\n“And who is Leo?”',
+  '“I don’t know what happened.\nNobody does. I woke up and everyone was… different.”',
+  '“But Leo…\nHe died. Nobody ever found out why. Not then, and not to this day.”',
+  '“There are more of them coming. Three who move together. Kentaro. Ayaansh.\nThat’s all I know.”',
+  '“I can’t fight them. But I can watch the 7th Grade door.\nIf one of them gets there, I’ll pull the alarm. You’ll see it on the cameras.”',
+  '“It takes me a minute to recover afterward.\nStay alive.”'
+];
+
+// ---- Night 9: Ayaansh (AI credits) ----
+let seen9=false;
+function updCred(){
+  const el=$('cred'),b=$('bGive');
+  const on=game&&!game.over&&game.credits!==undefined;
+  el.hidden=!on;
+  b.hidden=!(on&&!game.released&&mode==='cam'&&cur==='orch');if(b.hidden)giving=false;
+  if(!on)return;
+  const c=Math.round(game.credits),f=Math.ceil(c/10);
+  el.textContent=game.released?'AI credits: EMPTY \u2014 Ayaansh is on the move!':'AI credits: '+'\u2588'.repeat(f)+'\u2591'.repeat(10-f)+' '+c+'%';
+}
+let giving=false,lastG=0;
+$('bGive').onpointerdown=()=>{giving=true;lastG=vnow()};
+['pointerup','pointerleave','pointercancel'].forEach(ev=>$('bGive').addEventListener(ev,()=>{giving=false}));
+setInterval(()=>{
+  const n=vnow(),d=n-lastG;lastG=n;
+  if(giving&&game&&!game.over&&!game.released&&game.credits!==undefined){game.credits=Math.min(100,game.credits+d*.015);updCred()}
+},100);
+const N9=[
+  'Night 9.\nAustin is waiting when the lights flicker.',
+  '“Ayaansh is different. He doesn’t sneak. He doesn’t hunt.”',
+  '“He spent years building AI tools. Tutors, chatbots, that voice assistant in the library.\nHe taught it to run on credits.”',
+  '“Now it runs him. He sits in the Orchestra, perfectly still, for as long as it’s fed.\nKeep giving it credits.”',
+  '“If the credits run dry, he won’t stop.\nNot for doors. Not for anything. He’ll move faster than Tanqi.”',
+  '“One more thing about Leo.”',
+  '“He died a couple of months before you ever got here.\nThe school never explained how.\nI don’t think anyone wants to.”',
+  '“Watch the Orchestra camera. Feed it.\nI’ll keep an eye on the 7th Grade door.”'
+];
+
+// ---- Night 10: The Trio ----
+let ventClosed=false;
+function pick(e){if(e.routes){e.route=e.routes[Math.floor(Math.random()*e.routes.length)];e.skip=e.breaksDoor&&e.route.includes('h_laundry')?5:0}}
+function updVent(){const b=$('bVent');b.hidden=!(game&&game.oxy!==undefined);b.textContent=(ventClosed?'Open':'Close')+' vent (V)'}
+function toggleVent(){if(!game||game.over||game.oxy===undefined)return;ventClosed=!ventClosed;updVent()}
+$('bVent').onclick=toggleVent;
+addEventListener('keydown',e=>{if(e.key==='v'||e.key==='V')toggleVent()});
+function updOxy(){
+  const el=$('oxy');
+  if(!game||game.over||game.oxy===undefined){el.hidden=true;return}
+  el.hidden=false;const o=Math.round(game.oxy),f=Math.ceil(o/10);
+  el.textContent='Oxygen: '+'\u2588'.repeat(f)+'\u2591'.repeat(10-f)+' '+o+'%'+(ventClosed?' (vent sealed)':'');updVent();
+}
+
+// ---- Night 10 intro ----
+let seen10=false;
+const N10=[
+  'Night 10.\nAustin is already at the Wellness Corner door, peering through the glass.',
+  '“Three of them. They’re together in there right now.”',
+  '“Amber. She’s slow, and she isn’t out to hurt anyone.\nBut when she reaches the band room, Tanqi gets faster. Don’t let her get there.”',
+  '“She rattles easily. If she thinks she’s being watched, she loses her place.”',
+  '“Irene breathes the air in the walls. She lives in the vents.\nShut the vent on her, but not for long. The air gets thin.”',
+  '“And Sonya.”\nHe lowers his voice.',
+  '“She’s… not herself. She never takes the same way twice.\nI can’t tell you where she’ll come from.”',
+  '“I’ll keep watching the 7th Grade door.\nWatch the vents yourself.”'
+];
+
+// ---- Night 13: ??? (scene only) ----
+const N13=[
+  'Night 13.',
+  'Austin is waiting at your desk when you arrive.\nHe looks like he hasn’t slept in days.',
+  '“They’re all here tonight.\nEvery one of them.”',
+  '“Alan. Daniel. Nathan and Noah. Jonathan.\nTanqi. Kentaro. Ayaansh. And the three of them.”',
+  '“I don’t think they’re going to stop this time.”',
+  '“There’s something else.\nA shadow in the corner of your eye, flickering. It never gets close.\nIt doesn’t hurt anyone.”',
+  '“I don’t know what it is.\nI think… it might be Leo.”',
+  '“But I found something. The Main Doors.\nAfter 6 AM, the maintenance lock lets go. Only for a minute.”',
+  '“That’s our way out.\nIf we make it until morning, we walk out, and we never come back.”',
+  '“I’ll hold the 7th Grade door as long as I can.”',
+  '“Good luck.”'
+];
+
+let seen13=false;
+function shade(c,x,y,s){
+  c.save();c.globalAlpha=.25+Math.random()*.4;c.fillStyle='#000';c.strokeStyle='#4e8a6c';c.lineWidth=1;
+  c.beginPath();c.arc(x,y-92*s,14*s,0,7);c.fill();c.stroke();
+  [[-16,-78,32,48],[-14,-30,10,30],[4,-30,10,30],[-24,-76,8,40],[16,-76,8,40]].forEach(r=>{c.fillRect(x+r[0]*s,y+r[1]*s,r[2]*s,r[3]*s);c.strokeRect(x+r[0]*s,y+r[1]*s,r[2]*s,r[3]*s)});
+  c.restore();
+}
+
+// ---- Ending ----
+const ENDING=[
+  '6:00 AM.\nSomewhere in the walls, a lock clicks open.',
+  'The Main Doors give way.\nGray morning light spills across the floor for the first time in thirteen nights.',
+  'You and Austin run.\nYou don’t look back. Not at first.',
+  'Then you do.\nThrough the glass: the Commons, the halls, every window of a school that used to be loud.',
+  '“We just left them.”\n\nAlan. Daniel. Nathan and Noah. Tanqi.\nYour voice breaks before you can name them all.',
+  '“I know.”\nAustin’s hand is shaking on your shoulder.\n“I know. It hurts. It’s going to hurt for a long time.”',
+  '“But they’re still in there somewhere.\nAnd so is whatever did this.”',
+  '“We find out what caused it.\nWe find out what really happened to Leo.”',
+  '“Where do we even start?”',
+  'Austin holds up his phone.\nA photo: a boy grinning in front of a tower of iron lattice.\n\n“Ted. He was on vacation when it started. He never came back to Discovery.\nHe’s the only one of us who never got touched by it.”',
+  '“He’s in Paris.\nIf anyone saw something we didn’t, it’s him.”',
+  'The sun climbs over Discovery.\nYou take one last look, then turn away.\n\n“Paris, then.”',
+  'THIRTEEN NIGHTS AT DISCOVERY\n\nTo be continued…'
+];
+function playEnding(){
+  if(!devMode)try{localStorage.setItem('tnad_ch2u','1')}catch(e){}
+  $('endT').textContent='To be continued';$('endS').textContent='Next stop: Paris.';
+  $('bRetry').textContent='Chapter 2: Paris';retryN=14;
+  $('title').style.display='flex';playScene(ENDING,()=>show('tEnd'));
+}
+{const eb=document.createElement('button');eb.textContent='Ending scene';eb.style.gridColumn='1 / -1';eb.onclick=()=>{devMode=true;playEnding()};$('devGrid').appendChild(eb)}
+
+// ---- Door durability ----
+function updDura(){
+  const el=$('dura');
+  if(!game||game.over){el.hidden=true;return}
+  el.hidden=false;const d=Math.round(game.dura),f=Math.ceil(d/10);
+  el.textContent='Door: '+'\u2588'.repeat(f)+'\u2591'.repeat(10-f)+' '+d+'%'+(game.doorOff?' \u2014 DISABLED':game.broken?' \u2014 BROKEN':doorClosed?' (closed)':' (open)');
+}
+
+// ---- Sound ----
+const SETK='tnad_set';let OPT={on:true,friends:false};
+try{Object.assign(OPT,JSON.parse(localStorage.getItem(SETK))||{})}catch(e){}
+const saveS=()=>{try{localStorage.setItem(SETK,JSON.stringify(OPT))}catch(e){}};
+let AC=null,MG=null,NB=null,bgNodes=null,bgTimer=0;
+function ac(){
+  if(!AC){try{
+    AC=new (window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=.6;MG.connect(AC.destination);
+    NB=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  }catch(e){AC=null}}
+  if(AC&&AC.state==='suspended')AC.resume();
+  return AC;
+}
+const can=()=>OPT.on&&ac();
+function tn(f,t0,dur,type,vol){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(g);g.connect(MG);o.start(t0);o.stop(t0+dur+.05)}
+function nz(t0,dur,vol,type,freq){const s=AC.createBufferSource();s.buffer=NB;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=freq;const g=AC.createGain();g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);s.connect(f);f.connect(g);g.connect(MG);s.start(t0);s.stop(t0+dur+.05)}
+function clankSfx(){if(!can())return;const t=AC.currentTime;nz(t,.25,.35,'bandpass',1400);tn(170,t,.35,'triangle',.25);tn(260,t+.06,.25,'triangle',.15)}
+function alarmSfx(){if(!can())return;const t=AC.currentTime;for(let i=0;i<12;i++)tn(i%2?660:880,t+i*.5,.3,'square',.12)}
+function chimeSfx(){if(!can())return;const t=AC.currentTime;[523.25,659.25,783.99,1046.5].forEach((f,i)=>tn(f,t+i*.28,1.6,'triangle',.22))}
+function stepSfx(e){
+  if(!can())return;
+  const room=e.route[e.i],near=room==='g7'||room==='vent',watched=mode==='cam'&&cur===room;
+  const v=near?.5:watched?.3:.14,t=AC.currentTime;
+  nz(t,.09,v,'lowpass',320);nz(t+.24,.09,v*.9,'lowpass',280);
+  if(room==='vent'||room==='ventL')clankSfx();
+}
+function bgStart(){
+  bgStop();if(!can())return;
+  const t=AC.currentTime,g=AC.createGain();g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.09,t+3);g.connect(MG);
+  const os=[55,55.6,82.4].map(f=>{const o=AC.createOscillator();o.type=f>80?'sine':'sawtooth';o.frequency.value=f;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=220;o.connect(lp);lp.connect(g);o.start();return o});
+  const NT=[110,130.81,155.56,164.81,123.47];
+  bgNodes={g,os};
+  bgTimer=setInterval(()=>{if(can())tn(NT[Math.floor(Math.random()*NT.length)],AC.currentTime,3.5,'sine',.04)},4500);
+}
+function bgStop(){
+  clearInterval(bgTimer);
+  if(bgNodes&&AC){const t=AC.currentTime;try{bgNodes.g.gain.cancelScheduledValues(t);bgNodes.g.gain.setTargetAtTime(.0001,t,.3);bgNodes.os.forEach(o=>o.stop(t+1.5))}catch(e){}}
+  bgNodes=null;
+}
+// friend sounds: optional Name.wav files next to the page
+const FR={};
+function probeFriends(){
+  Object.values(ENEMY).forEach(d=>{
+    if(FR[d.name])return;
+    const a=new Audio();a.preload='auto';
+    a.addEventListener('canplaythrough',()=>{a._ok=true;updSet()},{once:true});
+    a.addEventListener('error',()=>{a._bad=true;updSet()});
+    a.src=d.name+'.wav';FR[d.name]=a;
+  });
+}
+function playFriend(name,vol){
+  if(!OPT.on||!OPT.friends)return;
+  const a=FR[name];
+  if(a&&a._ok&&a.paused){try{a.volume=vol;a.currentTime=0;a.play().catch(()=>{})}catch(e){}}
+}
+function updSet(){
+  $('bSnd').textContent='Sound: '+(OPT.on?'ON':'OFF');
+  $('bFr').textContent='Friend sounds: '+(OPT.friends?'ON':'OFF');
+  let t='Off: only the built-in sounds play.';
+  if(OPT.friends){
+    const ok=Object.keys(FR).filter(k=>FR[k]._ok),pend=Object.keys(FR).some(k=>!FR[k]._ok&&!FR[k]._bad);
+    t=ok.length?'Found: '+ok.join(', ')+'.':pend?'Looking for Name.wav files\u2026':'No files found. Put files like Tanqi.wav or Sonya.wav in the same folder as this page.';
+  }
+  $('frStat').textContent=t;
+}
+$('bSet').onclick=()=>{updSet();show('tSet')};
+$('bSetBack').onclick=()=>show('tMenu');
+$('bSnd').onclick=()=>{OPT.on=!OPT.on;saveS();if(!OPT.on)bgStop();updSet()};
+$('bFr').onclick=()=>{OPT.friends=!OPT.friends;saveS();if(OPT.friends)probeFriends();updSet()};
+addEventListener('pointerdown',()=>{if(OPT.on)ac()});
+addEventListener('keydown',()=>{if(OPT.on)ac()});
+if(OPT.friends)probeFriends();
+updSet();
+
+// ---- Chapter select & Chapter 2: Paris (skeleton) ----
+const mk=(t,x,c)=>{const e=document.createElement(t);if(x)e.textContent=x;if(c)e.className=c;return e};
+const CLUES={
+  c_ted:{t:'Ted: Leo’s last call',x:'Ted says Leo called him the night before he died. He sounded scared and kept saying he had “found the names.” He never said whose.'},
+  c_receipt:{t:'AI credit receipts',x:'Ayaansh’s AI credits were never billed by the school. Every top-up went to a company in Paris: AURELIS LABS. The footer lists a customer portal and a support email.'},
+  c_walk:{t:'The watcher',x:'Someone has stood across the street from the apartment two nights in a row. Gone by morning.'},
+  c_db:{t:'Aurelis database',x:'Thousands of student-assistant accounts tied to schools across Europe. One batch is labeled COHORT D: Discovery. Every account has a “behavior profile” and a controller name that has been blanked out. Last edit: 14 days ago.'},
+  c_leo:{t:'Leo’s old handle',x:'Leo was a better hacker than you. His old handle, N0VA_, posted about “a group that trades in student data.” His last post is a draft he never published, dated the day before he died.'},
+  c_tail:{t:'The key card',x:'You catch up to the person watching the building. They run, but they drop a key card stamped with a small lighthouse.'},
+  c_draft:{t:'Leo’s draft',x:'“They don’t take the students. They take what the students make. The people who pay for the credits are the same people who closed the school.” The draft ends mid-sentence.'},
+  c_light:{t:'The lighthouse',x:'The lighthouse on the key card matches a tiny watermark inside the Aurelis database. Whoever dropped it is connected to both.'},
+  c_logs:{t:'Aurelis access logs',x:'The blanked controller account was last used from a Paris address. The same account logged into Discovery’s network the night Leo died.'},
+  c_names:{t:'Leo’s hidden list',x:'The metadata of Leo’s draft hides a fragment: five sets of initials, each with a role. Funding. Legal. Hardware. “Schools.” “Cleanup.”'},
+  c_club:{t:'Le Phare',x:'The lighthouse is the emblem of a members-only club, Le Phare, a few blocks from the hotel. Its guest network is protected.'},
+  c_members:{t:'Le Phare guest list',x:'Eleven names on last month’s list are blanked out. One is visible: an administrator from Discovery, the person who signed the “maintenance” closure notice.'},
+  c_ted2:{t:'Leo’s package',x:'Ted finally admits Leo mailed him a small drive before he died, with a note: “not until it’s time.” He never opened it. It’s in the hotel safe.'},
+  c_drive:{t:'Leo’s drive',x:'The drive holds one video, eleven seconds long, timestamped the night Leo died. It shows an empty hallway at Discovery. Then the camera turns, and the footage cuts out.'}
+};
+const LEADS=[
+  {id:'ted',day:0,name:'Talk to Ted',desc:'He hasn’t heard the whole story yet.',req:[],gives:'c_ted'},
+  {id:'receipt',day:0,name:'Check Ayaansh’s AI receipts',desc:'A screenshot on Austin’s phone. Follow the money.',req:[],gives:'c_receipt'},
+  {id:'walk',day:0,name:'Walk the neighborhood',desc:'Get a feel for Paris. Keep your eyes open.',req:[],gives:'c_walk'},
+  {id:'aurelis',day:1,name:'Hack: Aurelis Labs AI database',desc:'Get past the login.',req:['c_receipt','c_ted'],gives:'c_db',hack:{q:'LOGIN HINT: “the thing Leo told Ted he had found.”',o:['The keys','The names','The map','The credits'],a:1}},
+  {id:'leo',day:1,name:'Dig through Leo’s old accounts',desc:'Find out who he was talking to.',req:['c_ted'],gives:'c_leo'},
+  {id:'tail',day:1,name:'Follow the watcher',desc:'Catch whoever is outside the building.',req:['c_walk'],gives:'c_tail'},
+  {id:'draft',day:2,name:'Read Leo’s unpublished draft',desc:'Match his handle to the database.',req:['c_leo','c_db'],gives:'c_draft'},
+  {id:'light',day:2,name:'Trace the lighthouse',desc:'Compare the key card with the database.',req:['c_tail','c_db'],gives:'c_light'},
+  {id:'logs',day:3,name:'Read the Aurelis access logs',desc:'Find who edited those accounts.',req:['c_db'],gives:'c_logs'},
+  {id:'names',day:3,name:'Pull apart Leo’s draft',desc:'Look for what he hid inside it.',req:['c_draft','c_leo'],gives:'c_names'},
+  {id:'club',day:3,name:'Find the lighthouse on a map',desc:'A logo means a place.',req:['c_light'],gives:'c_club'},
+  {id:'phare',day:4,name:'Hack: Le Phare guest network',desc:'Get the guest list.',req:['c_club','c_db'],gives:'c_members',hack:{q:'SECURITY CHECK: “Which Discovery cohort appears in the Aurelis database?”',o:['Cohort A','Cohort B','Cohort C','Cohort D'],a:3}},
+  {id:'ted2',day:4,name:'Ask Ted about Leo’s last favor',desc:'He’s been tense since the list came up.',req:['c_names'],gives:'c_ted2'},
+  {id:'drive',day:4,name:'Open Leo’s drive',desc:'It’s password protected.',req:['c_ted2','c_draft'],gives:'c_drive',hack:{q:'PASSWORD HINT: “the handle he always used.”',o:['LEO_','N0VA_','L1GHT_','NAMES_'],a:1}}
+];
+const HINT={
+  ted:'Austin: “Ted knows something he hasn’t said yet. Let him talk.”',
+  receipt:'Austin: “Check where Ayaansh’s money actually went.”',
+  walk:'Austin: “Someone keeps staring at the window. Might be nothing.”',
+  aurelis:'Austin: “The login wants something Leo said. Ted remembers it.”',
+  leo:'Austin: “Leo’s handle has to be somewhere. Ask around about his old accounts.”',
+  tail:'Austin: “Whoever’s watching us wants to be noticed. Go find out why.”',
+  draft:'Austin: “Leo wrote more than he published. Read between the lines.”',
+  light:'Austin: “That lighthouse isn’t random. Compare it with the database.”',
+  logs:'Austin: “Someone left a trail in those access logs.”',
+  names:'Austin: “Leo was careful. The draft might hide more than words.”',
+  club:'Austin: “A logo means a place. Find where the lighthouse hangs.”',
+  phare:'Austin: “Their network checks that you know exactly what you’re looking for.”',
+  ted2:'Austin: “Ted’s been tense since we mentioned Leo’s list. Ask again, gently.”',
+  drive:'Austin: “Leo would pick a password only he’d think of. Think of his handle.”'
+};
+function c2hint(){
+  const r=$('c2res');r.hidden=false;r.innerHTML='';
+  const vis=LEADS.filter(l=>l.day<=C2.day&&!C2.done.includes(l.id));
+  let l=vis.find(x=>x.req.every(q=>C2.clues.includes(q)));
+  if(!l&&vis.length){const m=vis[0].req.find(q=>!C2.clues.includes(q));l=LEADS.find(x=>x.gives===m&&!C2.done.includes(x.id))}
+  r.append(mk('div',l?HINT[l.id]:'Austin: “Nothing left to chase today. Get some rest.”'));
+}
+const DAYS=[
+  {t:'Day 1 — Paris',i:'Gray and wet. Ted’s hotel room on the fourth floor smells like coffee and old books. Ted listens to your whole story without interrupting, then goes very quiet.'},
+  {t:'Day 2 — Paris',i:'Morning. Austin has been staring at the same receipt for hours. Ted has made a lot of coffee.'},
+  {t:'Day 3 — Paris',i:'Another gray morning. The pieces are starting to fit, and you don’t like the shape they make.'},
+  {t:'Day 4 — Paris',i:'Ted hasn’t slept. Austin keeps looking at the lighthouse on the key card, as if it might blink back.'},
+  {t:'Day 5 — Paris',i:'The rain has stopped. Somehow that makes it worse. Today you’re close to something. You can feel it.'}
+];
+const NIGHT2=[
+  'Night 1. Rain keeps time on the glass. Downstairs, the door buzzer rings once, twice. Nobody is there.',
+  'Night 2. The streetlights outside go out one at a time, starting at the far end of the block.',
+  'Night 3. Something is on the stairs. Austin counts the steps out loud until they stop.',
+  'Night 4. The hotel lights flicker in a pattern. Ted unplugs everything, and nobody argues about leaving the lamp on.',
+  'Night 5. Every phone in the room lights up at the same moment. No caller. No number. Just a lighthouse.'
+];
+let C2={day:0,clues:[],done:[],acts:2};
+const C2K='tnad_ch2';
+function c2save(){if(devMode)return;try{localStorage.setItem(C2K,JSON.stringify(C2))}catch(e){}}
+function c2nb(){$('c2nb').innerHTML='';if(!C2.clues.length)$('c2nb').append(mk('div','Nothing yet.','note'));C2.clues.forEach(c=>{const d=mk('div','','rec');d.append(mk('b',CLUES[c].t),mk('br'),document.createTextNode(CLUES[c].x));$('c2nb').append(d)})}
+function c2render(){
+  const box=$('c2main');box.innerHTML='';
+  if(C2.day>=DAYS.length){
+    $('c2t').textContent='Chapter 2';$('c2a').textContent='';$('c2end').hidden=true;$('c2hint').hidden=true;
+    $('c2intro').textContent='End of Chapter 2. You made it through every night in Paris. To be continued…';
+    const b=mk('button','Restart Chapter 2');b.onclick=()=>{C2={day:0,clues:[],done:[],acts:2};c2save();$('c2res').hidden=true;c2render()};box.append(b);c2nb();return;
+  }
+  $('c2end').hidden=false;$('c2hint').hidden=false;
+  $('c2t').textContent=DAYS[C2.day].t;$('c2a').textContent=' · actions left: '+C2.acts;$('c2intro').textContent=DAYS[C2.day].i;
+  LEADS.filter(l=>l.day<=C2.day&&!C2.done.includes(l.id)).forEach(l=>{
+    const miss=l.req.filter(r=>!C2.clues.includes(r));
+    const b=mk('button',l.name+(miss.length?' (locked)':''));b.disabled=miss.length>0||C2.acts<1;b.onclick=()=>doLead(l);
+    box.append(b,mk('div',miss.length?'Needs: '+miss.map(m=>CLUES[m].t).join(', '):l.desc,'note'));
+  });
+  c2nb();
+}
+function c2finish(l){
+  C2.acts--;C2.done.push(l.id);C2.clues.push(l.gives);c2save();
+  const c=CLUES[l.gives],r=$('c2res');r.hidden=false;r.innerHTML='';r.append(mk('b','New clue: '+c.t),mk('br'),document.createTextNode(c.x));c2render();
+}
+function doLead(l){
+  const r=$('c2res');r.hidden=false;r.innerHTML='';
+  if(!l.hack){c2finish(l);return}
+  r.append(mk('div',l.hack.q));
+  l.hack.o.forEach((o,i)=>{const b=mk('button',o);b.onclick=()=>{
+    if(i===l.hack.a)c2finish(l);
+    else{C2.acts--;c2save();r.innerHTML='ACCESS DENIED. Trace started, and that cost you the action. Try again.';c2render()}
+  };r.append(b)});
+}
+$('c2end').onclick=()=>{
+  const r=$('c2res');r.hidden=false;r.innerHTML='';
+  r.append(mk('div',NIGHT2[C2.day]),mk('div',(C2.day<=4?'(This night is playable: cameras, the door and Austin’s alarm, like at Discovery.)':'(Night gameplay for this night is coming soon. For now it just moves the story along.)'),'note'));
+  const play=C2.day<=4;const b=mk('button',play?'Face the night':C2.day>=DAYS.length-1?'Finish':'Sleep until morning');
+  b.onclick=play?startParisNight:c2next;r.append(b);
+};
+$('c2x').onclick=showTitle;
+$('c2hint').onclick=c2hint;
+function ch2Open(skip){
+  bgStop();
+  if(!skip)try{Object.assign(C2,JSON.parse(localStorage.getItem(C2K))||{})}catch(e){}
+  const go2=()=>{$('title').style.display='none';$('c2res').hidden=true;$('ch2').hidden=false;c2render()};
+  if(!C2.seen){C2.seen=true;c2save();$('title').style.display='flex';playScene(P_INTRO,go2);return}
+  go2();
+}
+function updCh(){
+  const u=(()=>{try{return localStorage.getItem('tnad_ch2u')}catch(e){return null}})();
+  $('bCh2').disabled=!u;
+  $('chStat').textContent=u?'Chapter 2 is unlocked.':'Chapter 2 unlocks when you finish Chapter 1. (The dev menu can open it early.)';
+}
+$('bChap').onclick=()=>{updCh();show('tCh')};
+$('bChBack').onclick=()=>show('tMenu');
+$('bCh1').onclick=()=>{devMode=false;const s=getSave();if(s)begin(s.night);else pro()};
+$('bCh2').onclick=()=>{devMode=false;ch2Open()};
+{const b=document.createElement('button');b.textContent='Chapter 2: Paris';b.style.gridColumn='1 / -1';b.onclick=()=>{devMode=true;ch2Open()};$('devGrid').appendChild(b)}
+
+const P_INTRO=[
+  'Paris-Charles de Gaulle. 6:40 AM.\nThe plane touches down in gray light. Your legs are still shaking from thirteen nights.',
+  'Austin slept against the window the whole flight.\nHe wakes when the wheels hit the runway and says nothing for a long time.',
+  'Customs. A tired officer stamps two passports.\nHe doesn’t ask why two students look like they haven’t slept in a month.',
+  'Outside, a taxi idles at the curb.\nThe driver loads your bags without a word. A radio murmurs in French.',
+  'Rain on the window.\nStone buildings. Cafes with their chairs still stacked. A river the color of pewter.\n\n“It’s so… ordinary,” Austin says quietly.',
+  'You think of Discovery. The empty halls. The friends you left behind.\nParis just keeps going, like nothing ever happened.',
+  'The taxi stops at a narrow hotel with a green door.\nFourth floor. No elevator.',
+  'The door opens before you can knock.\n\nTed.',
+  'Tanned. A little thinner than you remember. Grinning, until he sees your faces.',
+  '“You actually came.”\nHe looks you both over.\n“You look terrible.”',
+  'Austin laughs, and it breaks into something else.\nTed pulls you both into a hug.',
+  '“Come in. The coffee’s on.\nThen you’re going to tell me everything.”'
+];
+
+// ---- Chapter 2: Paris, Night 1 (hotel map) ----
+const hbase=(w,f)=>{R(110,60,340,150,w);R(0,212,560,128,f);ctx.strokeStyle='rgba(255,220,170,.08)';ctx.beginPath();for(let i=0;i<=8;i++){ctx.moveTo(280+(i-4)*42,212);ctx.lineTo(280+(i-4)*140,340)}ctx.stroke()};
+const rainFx=()=>{ctx.strokeStyle='rgba(160,190,230,.25)';ctx.beginPath();for(let i=0;i<30;i++){const x=(i*47+t*3)%340+110,y=(i*83+t*9)%150+60;ctx.moveTo(x,y);ctx.lineTo(x-2,y+8)}ctx.stroke()};
+const hst=l=>()=>{hbase('#1d1519','#17100f');for(let i=0;i<6;i++)R(190+i*20,120-(i+1)*9,20,(i+1)*9,'#3a1a1e');ctx.strokeStyle='#8a7a40';ctx.beginPath();ctx.moveTo(185,118);ctx.lineTo(315,60);ctx.stroke();board(375,66,75,28,l)};
+const hsv=()=>{hbase('#1c1c1c','#141414');for(let i=0;i<6;i++)R(190+i*20,120-(i+1)*9,20,(i+1)*9,'#2a2a2a');C(280,66,6,6,'#ee8');board(375,66,75,28,'SERVICE')};
+const HS={
+  h_street:()=>{R(110,60,340,150,'#08101a');R(0,212,560,128,'#0b121a');C(152,76,16,10,'rgba(232,212,77,.22)');R(151,76,3,134,'#2a3640');R(300,70,120,70,'#1a1418');S(300,70,120,70,GM);T('HÔTEL',360,100,'#e8d44d','bold 18px Courier New');R(335,104,50,36,'#07090c');rainFx();CS(280,300,120,12,'rgba(120,160,210,.25)')},
+  h_lobby:()=>{hbase('#1d1519','#17100f');CS(280,76,40,8,'#8a7a40');R(278,60,3,16,'#8a7a40');R(130,172,80,26,'#3a1a1e');R(360,168,12,32,GD);C(366,164,18,14,'#1d4a35');C(280,300,110,18,'#2a1418')},
+  h_desk:()=>{hbase('#1d1519','#17100f');for(let i=0;i<10;i++)R(150+(i%5)*28,70+Math.floor(i/5)*24,18,16,'#2a2024');R(130,172,300,22,'#2e2024');R(200,164,10,6,'#c9a')},
+  h_stairG:hst('ESCALIER'),h_stair4:hst('4E ÉTAGE'),h_service:hsv,h_svc4:hsv,
+  h_kitchen:()=>{hbase('#20262a','#161a1d');R(130,66,120,26,'#3a4248');for(let i=0;i<4;i++)C(280+i*34,80,10,10,'#4a5258');R(300,160,120,40,'#2c3338');R(130,170,80,30,'#2c3338')},
+  g7:()=>{hbase('#1e1418','#2a1418');R(250,214,60,126,'#3a1a1e');[[125,'409'],[175,'410'],[365,'411'],[415,'413']].forEach(d=>{R(d[0],100,30,60,'#2a2024');T(d[1],d[0]+15,94,'#8a7a40','9px Courier New')});C(230,80,6,6,'rgba(232,212,77,.4)');C(330,80,6,6,'rgba(232,212,77,.4)')},
+  h_laundry:()=>{hbase('#1c2024','#14181b');[150,250,350].forEach(x=>{R(x,100,70,90,'#2c3338');CS(x+35,150,22,22,'#5d8a70')})}
+};
+const MAP1={rooms:JSON.parse(JSON.stringify(ROOMS)),edges:EDGES.map(e=>e.slice()),scene:{...SCENE}};
+const MAP2={rooms:{
+  h_street:{n:'01',name:'Street',short:'Street',f:1,x:10,y:10,w:100,h:60},
+  h_lobby:{n:'02',name:'Lobby',f:1,x:130,y:10,w:100,h:60},
+  h_desk:{n:'03',name:'Front Desk',short:'Desk',f:1,x:250,y:10,w:100,h:60},
+  h_stairG:{n:'04',name:'Main Stairs (G)',short:'Stairs G',f:1,x:130,y:100,w:100,h:50},
+  h_kitchen:{n:'05',name:'Kitchen',f:1,x:250,y:100,w:100,h:50},
+  h_service:{n:'06',name:'Service Stairs (G)',short:'Svc G',f:1,x:250,y:180,w:100,h:50},
+  h_stair4:{n:'07',name:'Main Stairs (4F)',short:'Stairs 4F',f:2,x:130,y:60,w:100,h:50},
+  h_svc4:{n:'08',name:'Service Stairs (4F)',short:'Svc 4F',f:2,x:250,y:60,w:100,h:50},
+  g7:{n:'09',name:'Hallway (your door)',short:'Hallway',f:2,x:130,y:150,w:220,h:50},
+  h_laundry:{n:'10',name:'Laundry Room',short:'Laundry',f:2,x:10,y:150,w:100,h:50},
+  h_lot:{n:'11',name:'Main Lot',f:0,x:130,y:100,w:200,h:70},
+  h_lot1:{n:'12',name:'Side Lot 1',short:'Side Lot 1',f:0,x:10,y:100,w:100,h:70},
+  h_lot2:{n:'13',name:'Side Lot 2',short:'Side Lot 2',f:0,x:350,y:100,w:90,h:70},
+  h_elev:{n:'14',name:'Elevator (B1)',short:'Elevator',f:0,x:180,y:200,w:100,h:50},
+  h_roof:{n:'15',name:'Roof',f:2,x:10,y:10,w:100,h:50},
+  h_zip:{n:'16',name:'Zip Line',short:'Zip Line',f:2,x:10,y:80,w:100,h:50},
+  office:{n:'--',name:'Your Room',short:'Your room',f:2,x:190,y:240,w:100,h:50,you:true}
+},edges:[['h_street','h_lobby'],['h_lobby','h_desk'],['h_lobby','h_stairG'],['h_lobby','h_kitchen'],['h_kitchen','h_service'],['h_stairG','h_stair4'],['h_service','h_svc4'],['h_stair4','g7'],['h_svc4','g7'],['g7','h_laundry'],['g7','office'],['h_lot','h_lot1'],['h_lot','h_lot2'],['h_lot','h_elev'],['h_elev','h_lobby'],['h_roof','h_zip'],['h_zip','h_laundry']],scene:HS};
+let CH=1;
+function useMap(ch){
+  const M=ch===2?MAP2:MAP1;
+  Object.keys(ROOMS).forEach(k=>delete ROOMS[k]);Object.assign(ROOMS,JSON.parse(JSON.stringify(M.rooms)));
+  EDGES.length=0;M.edges.forEach(e=>EDGES.push(e.slice()));
+  Object.keys(SCENE).forEach(k=>delete SCENE[k]);Object.assign(SCENE,M.scene);
+  KEYS.length=0;KEYS.push(...Object.keys(ROOMS));
+  $('tB').hidden=ch!==2;if(floor===0&&ch!==2)floor=1;$('t1').textContent=ch===2?'Ground':'Main Floor';$('t2').textContent=ch===2?'4th Floor':'Upper Floor';
+  CH=ch;go(ch===2?'h_lobby':'commons');
+}
+const PARIS_ROSTER='<div class="rec" style="color:var(--acc)">HOTEL NETWORK · no absence roster here.<br>Night manager log (auto-saved):<br>“Front door buzzer, 12:40. No one on camera.”<br>“Stair light on the second landing keeps switching itself on.”<br>“Service stairs door sticks. Two routes up to the fourth floor.”<br>“Guest in 412 says the door ‘won’t take much.’”</div>';
+const PNIGHT1=[
+  'Night 1. Paris.\nTed’s hotel room, fourth floor.',
+  'You have the hotel’s camera network open on the laptop.\nTed finally fell asleep on the couch.',
+  'The buzzer downstairs rings once. Twice.\nNobody is there.',
+  'Then the front door opens, slowly.\nFootsteps in the lobby.',
+  'Austin: “Same as before. Watch the cameras. Shut that door when it gets close.\nI’ll warn you when it reaches our floor.”'
+];
+function startParisNight(){
+  $('ch2').hidden=true;$('title').style.display='flex';
+  playScene([PNIGHT1,PNIGHT2,PNIGHT3,PNIGHT4,PNIGHT5][C2.day]||PNIGHT1,()=>{
+    $('title').style.display='none';
+    useMap(2);start=vnow();pan=0;target=0;setSpeed(1);startNight(101+C2.day);go(['h_lobby','h_lot1','h_roof','h_desk','h_street'][C2.day]||'h_lobby');setMode('office');bgStart();
+  });
+}
+function c2next(){C2.day++;C2.acts=2;c2save();$('c2res').hidden=true;c2render()}
+function endParis(win){
+  if(win){chimeSfx();$('endT').textContent='6:00 AM';$('endS').textContent='Morning in Paris.';$('bRetry').textContent='Continue';retryN=-2}
+  else{$('endT').textContent='Caught';$('endS').textContent=game.cause||(game.name+' reached your door.');$('bRetry').textContent='Retry night';retryN=-1}
+  showEnd(win?0:600);
+}
+function drawParisOffice(){
+  const W=oc.width,H=oc.height,VW=900,r=(x,y,w,h,c)=>{ox.fillStyle=c;ox.fillRect(x,y,w,h)};
+  pan+=(target-pan)*.08;const cx=(VW-W)/2*(1+pan);offCx=cx;
+  ox.setTransform(1,0,0,1,0,0);r(0,0,W,H,'#050807');ox.translate(-cx,0);
+  r(0,0,VW,230,'#1b1519');r(0,230,VW,110,'#130e11');
+  ox.strokeStyle='#2a1f24';ox.lineWidth=1;for(let x=0;x<VW;x+=60){ox.beginPath();ox.moveTo(x,0);ox.lineTo(x,230);ox.stroke()}
+  r(380,40,190,130,'#0a1622');ox.strokeStyle='#4e8a6c';ox.strokeRect(380,40,190,130);
+  ox.beginPath();ox.moveTo(475,40);ox.lineTo(475,170);ox.moveTo(380,105);ox.lineTo(570,105);ox.stroke();
+  ox.strokeStyle='#1c3a52';ox.beginPath();ox.moveTo(455,170);ox.lineTo(475,70);ox.lineTo(495,170);ox.moveTo(460,140);ox.lineTo(490,140);ox.moveTo(465,115);ox.lineTo(485,115);ox.stroke();
+  ox.strokeStyle='rgba(160,190,230,.35)';ox.beginPath();for(let i=0;i<24;i++){const x=380+(i*41+t*2)%190,y=40+(i*67+t*8)%130;ox.moveTo(x,y);ox.lineTo(x-2,y+9)}ox.stroke();
+  r(360,36,24,140,'#2a1418');r(566,36,24,140,'#2a1418');
+  r(620,175,230,45,'#2a1f26');r(620,160,230,18,'#3a2a32');r(630,150,70,16,'#4a3a42');r(560,170,36,50,'#20181c');
+  ox.fillStyle='rgba(232,212,77,.3)';ox.beginPath();ox.arc(578,160,12,0,7);ox.fill();r(576,160,4,12,'#8a7a40');
+  r(30,50,110,182,'#2a1c20');
+  if(!doorClosed){const gl=ox.createLinearGradient(40,60,130,60);gl.addColorStop(0,'#08100c');gl.addColorStop(1,'#3a2a1e');ox.fillStyle=gl;ox.fillRect(40,60,90,172);ox.fillStyle='rgba(232,190,120,.07)';ox.beginPath();ox.moveTo(40,232);ox.lineTo(130,232);ox.lineTo(230,H);ox.lineTo(0,H);ox.fill()}
+  ox.textAlign='center';ox.fillStyle='#8a7a60';ox.font='10px Courier New';ox.fillText('◄ HALLWAY',85,40);
+  if(game&&!game.over&&!doorClosed&&game.en.some(e=>!e.off&&e.route[e.i]==='g7'))figure(ox,85,232,.95,game.en.filter(e=>!e.off&&e.route[e.i]==='g7').map(e=>e.name).join('/'));
+  if(doorClosed){r(40,60,90,172,'#33222a');ox.strokeStyle='#8a7a60';ox.strokeRect(40,60,90,172);r(60,78,50,20,'#8a7a40');ox.fillStyle='#1a1418';ox.font='bold 12px Courier New';ox.fillText('412',85,93);r(112,150,6,12,'#c9a');if(game&&game.dura<50){ox.strokeStyle='#8aa';ox.beginPath();ox.moveTo(50,110);ox.lineTo(80,150);ox.lineTo(64,186);ox.stroke()}}
+  ox.setTransform(1,0,0,1,0,0);
+  r(0,H-46,W,46,'#070c0a');r(0,H-50,W,5,'#0d1713');r(W/2-70,H-92,140,50,'#0a0f0d');ox.strokeStyle='#1f3a2e';ox.strokeRect(W/2-70,H-92,140,50);
+  ox.fillStyle=`rgba(185,232,201,${.5+.2*Math.sin(Date.now()/400)})`;ox.font='11px Courier New';ox.textAlign='center';ox.fillText('CAMERAS [SPACE]',W/2,H-62);
+  for(let i=0;i<90;i++){ox.fillStyle=`rgba(180,255,200,${Math.random()*.08})`;ox.fillRect(Math.random()*W,Math.random()*H,2,1)}
+  const g=ox.createRadialGradient(W/2,H/2,H/3,W/2,H/2,W/1.5);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.75)');ox.fillStyle=g;ox.fillRect(0,0,W,H);
+  ox.fillStyle='#5d8a70';ox.font='18px Courier New';
+  if(pan>-.9){ox.textAlign='left';ox.fillText('◄',10,H/2)}
+  if(pan<.9){ox.textAlign='right';ox.fillText('►',W-10,H/2)}
+}
+
+// ---- Paris B1 parking ----
+const car=(x,y,c)=>{R(x,y,70,22,c);R(x+12,y-14,46,14,c);R(x+14,y-12,16,10,'#0a1620');R(x+36,y-12,16,10,'#0a1620');C(x+14,y+22,7,7,'#050505');C(x+56,y+22,7,7,'#050505')};
+const park=cars=>()=>{
+  R(110,60,340,150,'#14181a');R(0,212,560,128,'#101315');R(110,62,340,6,'#2a3034');R(150,60,26,150,'#1c2124');R(384,60,26,150,'#1c2124');
+  for(let i=0;i<7;i++)R(110+i*50,232,3,100,'rgba(232,212,77,.3)');
+  C(280,74,40,4,Math.random()<.9?'rgba(185,232,201,.25)':'rgba(185,232,201,.05)');
+  R(230,92,60,14,'#0a1a10');T('SORTIE',260,103,'#6c6','bold 10px Courier New');
+  cars.forEach(c=>car(c[0],c[1],c[2]));
+};
+HS.h_lot=park([[140,170,'#2a3a4a'],[330,168,'#3a2a2a'],[230,236,'#2a2a30']]);
+HS.h_lot1=park([[200,176,'#2a3a2e']]);
+HS.h_lot2=()=>{park([[160,174,'#3a3a3a']])();CS(340,290,40,8,'rgba(0,0,0,.6)')};
+HS.h_elev=()=>{hbase('#1c2024','#14181b');R(230,80,100,130,'#3a4248');R(279,80,2,130,'#222');T('B1',280,72,'#e33','bold 14px Courier New');R(350,130,10,20,'#8a7a40');R(150,100,50,40,'#10201a');T('↑ LOBBY',175,122,'#6c6','10px Courier New')};
+$('tB').onclick=()=>{floor=0;drawMap()};
+
+// ---- Paris Night 2: The Driver ----
+const PARIS_R2='<div class="rec">Garage log (auto-saved):<br>“Side Lot 1: headlights switch on, 12:10. No car is registered to that bay.”<br>“Garage elevator only goes to the lobby. From there, guests take the main stairs or the kitchen’s service stairs.”<br>“Valet says the engine is always running. Never anyone inside.”</div>';
+const PNIGHT2=[
+  'Night 2. Paris.\nTed’s hotel room, fourth floor.',
+  'Ted wakes up on the couch and wanders over to your laptop.',
+  'On the garage camera, a figure steps out of a car in Side Lot 1.\nThe headlights are still on. His face is turned from the lens.',
+  '“Wait,” Ted says. “Go back. He looks familiar.”',
+  '“Like the driver on the news. The one who died in that car accident a couple of weeks ago.\nSame jacket. Same walk. Same…”\nHe stops. “That can’t be right.”',
+  'Austin: “Keep that door shut when he gets close.\nWhoever he is, he’s coming up.”'
+];
+
+// ---- Dev: jump into Paris days and nights ----
+function devParis(day,night){
+  devMode=true;
+  C2={day,clues:[],done:[],acts:2,seen:true};
+  LEADS.filter(l=>l.day<day).forEach(l=>{C2.done.push(l.id);C2.clues.push(l.gives)});
+  if(night)startParisNight();else ch2Open(true);
+}
+{
+  const g=$('devGrid'),lab=t=>{const d=document.createElement('div');d.className='ts';d.style.cssText='grid-column:1/-1;margin:6px 0 0';d.textContent=t;g.appendChild(d)};
+  const add=(t,f)=>{const b=document.createElement('button');b.textContent=t;b.onclick=f;g.appendChild(b)};
+  lab('PARIS NIGHTS');add('P1',()=>devParis(0,true));add('P2',()=>devParis(1,true));add('P3',()=>devParis(2,true));add('P4',()=>devParis(3,true));add('P5',()=>devParis(4,true));
+  lab('PARIS DAYS (earlier clues pre-filled)');for(let i=0;i<5;i++)add('D'+(i+1),()=>devParis(i,false));
+  lab('PARIS ENDING');{const eb=document.createElement('button');eb.textContent='Paris ending scene';eb.style.gridColumn='1 / -1';eb.onclick=()=>{devMode=true;playParisEnd(true)};g.appendChild(eb)}
+}
+
+// ---- Paris Night 3: The Agent (roof + zip line) ----
+HS.h_roof=()=>{
+  R(110,60,340,150,'#0a1220');R(0,212,560,128,'#10161e');
+  [[130,150,28,60],[170,170,40,40],[360,140,30,70],[400,160,40,50]].forEach(b=>R(b[0],b[1],b[2],b[3],'#141c28'));
+  ctx.strokeStyle='#27405a';ctx.beginPath();ctx.moveTo(262,210);ctx.lineTo(280,90);ctx.lineTo(298,210);ctx.moveTo(268,170);ctx.lineTo(292,170);ctx.stroke();
+  R(279,76,2,14,'#27405a');C(420,80,6,6,'#9ab');
+  for(let i=0;i<5;i++)R(180+i*60,222,40,3,'rgba(120,160,210,.15)');
+  rainFx();
+};
+HS.h_zip=()=>{
+  R(110,60,340,150,'#0a1220');R(0,212,560,128,'#0e141b');
+  ctx.strokeStyle='#8a9aa8';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(110,75);ctx.lineTo(450,185);ctx.stroke();ctx.lineWidth=1;
+  R(104,66,10,24,'#3a4248');R(444,176,10,24,'#3a4248');C(280,130,6,6,'#aab');R(279,136,2,20,'#aab');R(270,156,20,6,'#aab');
+  rainFx();
+};
+const PARIS_R3='<div class="rec">Rooftop bar log (auto-saved):<br>“Zip line stays strung after hours. Far end is anchored at the laundry room window.”<br>Alarm install notes: “Sensors cover the stairs and the main hallway. Roof, zip line and laundry window: not wired.”<br>Security: “Man in a dark suit. Never badges in anywhere. Sensors never see him.”</div>';
+const PNIGHT3=[
+  'Night 3. Paris.\nTed’s hotel room, fourth floor.',
+  'Austin spends an hour taping sensors to the door frame, then frowns at the readout.',
+  '“The alarm works. But there’s a gap. Something up on the roof isn’t showing on any of the sensors.”',
+  'Ted: “The hotel put a zip line up there last summer, for the rooftop bar.\nThe cable runs straight down to the laundry room window.”',
+  'On the roof camera, a man in a dark suit, one hand to his ear, looking down at the cable.\nHe doesn’t look cold. He doesn’t look like he’s waiting for anyone.',
+  'Austin: “My alarm won’t catch him. You’ll have to watch the cameras yourself.”'
+];
+
+// ---- Paris Night 4: The Troublemaker Child ----
+const PARIS_R4='<div class="rec">Front desk log (auto-saved):<br>“Key cards keep going missing. A child was seen near the desk after midnight.”<br>Maintenance: “The laundry room holds the control box for the 4th-floor door locks. Somebody pried the panel off twice this month.”<br>Night manager: “The kid backs off if he feels watched. Goes straight back to the desk.”</div>';
+const PNIGHT4=[
+  'Night 4. Paris.\nTed’s hotel room, fourth floor.',
+  'On the front desk camera, a kid in a hotel hoodie. He’s climbing over the counter and pocketing key cards, one at a time.',
+  'Ted squints at the screen. “I don’t know him. He’s not a guest.”',
+  'Austin: “He’s slow, but he’s curious about every door in the building.\nIf he gets into the laundry room, he’ll mess with the control box. Our door goes dead.”',
+  '“Kids hate being stared at. Keep a camera on him, and he might lose interest.”'
+];
+
+// ---- Paris Night 5 (final): The Crippled One ----
+const PARIS_R5='<div class="rec">Street camera log (auto-saved):<br>“Man by the lamp post across the road. Same spot every night. Eyes shut. Leans on a crutch.”<br>Night porter: “He moves like his leg is broken. I swear I once saw him take the stairs in seconds.”<br>Night manager: “When the alarm goes off, you won’t have time to do much.”</div>';
+const PNIGHT5=[
+  'Night 5. The last night in Paris.\nTed’s hotel room, fourth floor.',
+  'On the street camera, a man leans against the lamp post across the road.\nHead down. One crutch. Both eyes closed.',
+  'Ted: “That poor guy. Look at his leg. He can barely stand.”',
+  'Austin: “Don’t be fooled. Watch his eyes.”',
+  '“If he opens them, shut that door before anything else.\nThe alarm will go off, but it won’t give us any time.”'
+];
+
+// ---- Paris ending ----
+const PARIS_END=[
+  'Five days. Five nights.\nYou lay everything out on Ted’s table.',
+  'Leo was a hacker, better than you.\nHe’d found “the names”: five sets of initials. Funding. Legal. Hardware. “Schools.” “Cleanup.”\nHe mailed Ted a drive, and its only file ends on an empty hallway at Discovery. Then the footage cuts.',
+  'Ayaansh’s AI credits were never billed by the school.\nEvery top-up went to Aurelis Labs, here in Paris.\nTheir database holds student-assistant accounts across Europe. Discovery’s batch is labeled COHORT D.',
+  'Every account has a behavior profile, and a controller whose name was blanked out.\nOne of those controllers logged into Discovery’s network the night Leo died.',
+  'The lighthouse on the key card is the emblem of Le Phare, a club a few blocks away.\nOn its guest list, one name left visible: an administrator from Discovery.\nThe person who signed the “maintenance” closure.',
+  '“They don’t take the students. They take what the students make.”\nLeo wrote that, and then he stopped mid-sentence.',
+  'And five nights of things coming up the stairs.\nNone of it random. All of it aimed at you.',
+  'Austin: “There’s one door left. Aurelis’s admin side.\nIf Leo’s handle still works…”',
+  'You open the login.\n\nUSER: N0VA_\nPASSWORD: the names\n\nThe screen thinks about it for a long time.',
+  'ACCESS GRANTED.\nAURELIS LABS — ADMIN.\n\nThousands of accounts scroll past. Schools in six countries.\nOne folder sits under a red banner.',
+  'CLASSIFIED — CARGO CRUISE 01\n\nDeparture: 03:00, in three days.\nPort of Le Havre, Dock 9.\nCargo: “COHORT D — PHASE 2.”',
+  'The passenger list is blanked out, except for one line.\n\n“Cleanup.”',
+  'Ted reads it over your shoulder. “Le Havre is a few hours by train.”\nAustin: “If that ship leaves, we’ll never find out what Phase 2 is.”',
+  'You close the laptop.\nEveryone you left at Discovery is somewhere in that file.\n\n“We’re getting on that ship.”',
+  'Ted nods. “I’m not letting you two go alone.”\nAustin is already packing.',
+  'Next stop: the port of Le Havre.\n\nTHIRTEEN NIGHTS AT DISCOVERY\nChapter 2 complete\n\nTo be continued…'
+];
+function playParisEnd(toTitle){
+  bgStop();$('ch2').hidden=true;$('title').style.display='flex';
+  playScene(PARIS_END,()=>{
+    if(toTitle){showTitle();return}
+    $('title').style.display='none';$('c2res').hidden=true;$('ch2').hidden=false;c2render();
+  });
+}
+
+go('commons');render();setMode('office');officeLoop();showTitle();
+</script>
+</body>
+</html>
